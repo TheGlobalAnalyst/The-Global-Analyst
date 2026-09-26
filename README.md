@@ -30,3 +30,4 @@ Do not redesign the site while integrating the newsroom. The product/UI is inten
 See:
 - `integration/PUBLICATION_CONTRACT.md`
 - `integration/WORK_HANDOFF.md`
+Website repository connected to Vercel.
