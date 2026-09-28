@@ -25,7 +25,11 @@ assert.equal(JSON.parse(await readFile(manifest, 'utf8')).length, 1);
 
 globalThis.fetch = async () => Response.json([{ ...good, publication_status: 'shadow_ready' }]);
 await assert.rejects(import('./sync-publication.mjs?case=reject-draft'), /unapproved or incomplete/);
+assert.equal(JSON.parse(await readFile(manifest, 'utf8')).length, 1);globalThis.fetch = async () => Response.json([{ ...good, citations: [{ url: 'javascript:alert(1)' }, { url: 'https://example.com/2' }] }]);
+await assert.rejects(import('./sync-publication.mjs?case=reject-citation'), /unapproved or incomplete/);
 assert.equal(JSON.parse(await readFile(manifest, 'utf8')).length, 1);
+
+
 
 globalThis.fetch = async () => Response.json([]);
 await assert.rejects(import('./sync-publication.mjs?case=empty'), /Refusing to replace/);
