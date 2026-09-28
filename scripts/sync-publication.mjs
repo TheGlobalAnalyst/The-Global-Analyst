@@ -33,7 +33,10 @@ const articles = sourceArticles.map((article) => {
       !['verified', 'verified_corrected', 'corrected'].includes(article.verification_state) ||
       !article.canonical_key || !article.slug || !article.headline || !article.body_markdown ||
       !article.published_at || !article.approved_at || !Array.isArray(article.citations) ||
-      article.citations.length < 2) throw new Error('Feed contains an unapproved or incomplete article');
+      article.citations.length < 2 || article.citations.some(c =>
+        !c || typeof c.url !== 'string' || !/^https?:\/\//i.test(c.url))) {
+    throw new Error('Feed contains an unapproved or incomplete article');
+  }
   if (seenKeys.has(article.canonical_key) || seenSlugs.has(article.slug)) {
     throw new Error('Feed contains duplicate canonical keys or slugs');
   }
