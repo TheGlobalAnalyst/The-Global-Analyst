@@ -5,18 +5,30 @@ const source = process.env.TGA_PUBLICATION_FEED_URL;
 const target = process.env.TGA_PUBLICATION_MANIFEST || 'content/published-articles.json';
 if (!source) throw new Error('TGA_PUBLICATION_FEED_URL is required');
 const parsedSource = new URL(source);
-if (parsedSource.protocol !== 'https:' || !parsedSource.pathname.endsWith('/api/publication-feed')) {
-  throw new Error('Expected an HTTPS Preview publication feed URL');
+const devRestSource = parsedSource.hostname === 'yugoifzlhfubxefawqqs.supabase.co' && parsedSource.pathname === '/rest/v1/public_articles';
+if (parsedSource.protocol !== 'https:' || !devRestSource) {
+  throw new Error('Expected the exact HTTPS TGA DEV public_articles REST URL');
 }
-
-const response = await fetch(source, { headers: { accept: 'application/json' }, cache: 'no-store' });
+if (devRestSource && !process.env.TGA_DEV_SUPABASE_PUBLISHABLE_KEY) {
+  throw new Error('TGA_DEV_SUPABASE_PUBLISHABLE_KEY is required for DEV REST source');
+}
+const headers = { accept: 'application/json' };
+if (devRestSource) {
+  headers.apikey = process.env.TGA_DEV_SUPABASE_PUBLISHABLE_KEY;
+  headers.Authorization = 'Bearer ' + process.env.TGA_DEV_SUPABASE_PUBLISHABLE_KEY;
+  parsedSource.searchParams.set('select', 'canonical_key,slug,headline,teaser,summary,body_markdown,countries,topics,citations,author_role,author_role_slug,reading_time_minutes,published_at,approved_at,website_section,related_content,newsletter_product,newsletter_cta,ai_disclosure,confidence,verification_state,featured,publication_approved,publication_status');
+  parsedSource.searchParams.set('publication_status', 'eq.published');
+  parsedSource.searchParams.set('publication_approved', 'eq.true');
+}
+const response = await fetch(parsedSource, { headers, cache: 'no-store' });
 if (!response.ok) throw new Error('Publication feed failed: HTTP ' + response.status);
 const payload = await response.json();
-if (!Array.isArray(payload.articles)) throw new Error('Publication feed has no articles array');
+const sourceArticles = payload;
+if (!Array.isArray(sourceArticles)) throw new Error('Publication feed has no articles array');
 
 const seenKeys = new Set();
 const seenSlugs = new Set();
-const articles = payload.articles.map((article) => {
+const articles = sourceArticles.map((article) => {
   if (article.publication_status !== 'published' || article.publication_approved !== true ||
       !['verified', 'verified_corrected', 'corrected'].includes(article.verification_state) ||
       !article.canonical_key || !article.slug || !article.headline || !article.body_markdown ||
