@@ -1,1 +1,148 @@
-[]
+[
+  {
+    "canonical_key": "sahel-v1-burkina-faso-burkina-faso-les-ong-devront-inv-130750d",
+    "slug": "burkina-faso-ngo-80-percent-field-investment-decree",
+    "headline": "Burkina Faso orders NGOs to put 80% of budgets into field spending",
+    "teaser": "A new Council of Ministers decree forces every NGO operating in Burkina Faso to funnel at least 80% of its budget directly into field activities, with enforcement details still unpublished.",
+    "summary": "Burkina Faso's Council of Ministers adopted decrees on 24 September 2026 requiring all NGOs to allocate at least 80% of their budgets to direct field investment and to hold mandatory accord-cadre or convention de siège status, with a one-to-two-year grace period and no published enforcement mechanism yet.",
+    "body_markdown": "Burkina Faso's Council of Ministers, presided by transitional President Capt. Ibrahim Traoré, adopted decrees on 24 September 2026 requiring every NGO operating in the country to allocate at least 80% of its overall budget to direct field investment. The rule is paired with a new legal-status regime: Burkinabè-law associations must sign an accord-cadre with the state, while foreign organizations must obtain a convention de siège, according to the government's official session communiqué and reporting from Burkina24, Bénin Web TV and other Burkinabè outlets.\n\nThe decree does not yet specify how the 80% threshold will be calculated or audited, nor what sanctions apply if organizations fail to comply once a grace period expires. Sources diverge on that grace period's length: Burkina24, Bénin Web TV, La Nouvelle Tribune and Mousso News all cite two years, while Yeclo and Echos Medias report twelve months for existing organizations to sign their accord-cadre or convention de siège. No published decree text from the Primature or Secretariat General of the Council of Ministers was located; reporting relies on the official session summary and secondary press coverage, and it remains unclear which figure will prevail once implementing texts appear.\n\nGovernment framing, relayed through Minister of Economy and Finance Aboubakar Nakanabo, presents the measure as a guarantee that NGO funding reaches vulnerable populations rather than being absorbed by operating costs. Analysts place the decree inside a wider sequence of controls Ouagadougou has imposed since 2025, including mandatory Treasury bank domiciliation for NGO accounts introduced in October 2025 and a revised national registry of non-profit organizations in July 2026. A separate 17 September 2026 decree, adopted the week before, set new rules for how convention de siège requests generally are handled, requiring such dossiers to go before the Council of Ministers for approval — part of the same broader tightening of the legal environment for foreign-linked organizations, though not exclusively an NGO measure. Analysts note the pattern mirrors sovereignty-framed NGO restrictions adopted by Mali and Niger, Burkina Faso's partners in the Alliance des États du Sahel.\n\nThe stakes are magnified by the state of humanitarian funding in Burkina Faso, where OCHA reported that only 39% of people targeted for assistance had been reached as of 30 September 2025, against a US$658.5 million funding ask for the 2026 response plan covering 2.7 million people. If enforced as described, the 80% rule could compel major international NGOs and UN-adjacent operators to restructure overhead-heavy programs or risk losing legal status, precisely as needs are described as chronically underfunded.\n\nWhether that disruption materializes remains genuinely uncertain. The grace period, whatever its true length, defers immediate impact, and the absence of published calculation methodology or sanctions means NGOs cannot yet assess compliance costs. What to watch: publication of an implementing text specifying audit methodology and penalties; whether major operators publicly contest the categorization of 'direct field investment' versus functioning costs; and whether Mali or Niger cite the Burkinabè decree as precedent for their own NGO regimes.",
+    "countries": [
+      "Burkina Faso",
+      "Mali",
+      "Niger"
+    ],
+    "topics": [
+      "NGO regulation",
+      "humanitarian access",
+      "civil society space",
+      "Sahel governance"
+    ],
+    "citations": [
+      {
+        "url": "https://burkina24.com/2026/09/24/ong-au-burkina-faso-80-des-ressources-devront-desormais-aller-directement-sur-le-terrain/",
+        "supports": "80% direct field investment requirement and adoption date",
+        "publisher": "Burkina24"
+      },
+      {
+        "url": "https://burkina24.com/2026/09/24/compte-rendu-du-conseil-des-ministres-du-jeudi-24-septembre-2026/",
+        "supports": "Official Council of Ministers communiqué confirming the decrees",
+        "publisher": "Burkina24"
+      },
+      {
+        "url": "https://www.yeclo.com/burkina-faso-les-ong-sommees-de-consacrer-80-de-leur-budget-au-terrain/",
+        "supports": "One-year grace period figure and unresolved enforcement mechanics",
+        "publisher": "Yeclo"
+      },
+      {
+        "url": "https://www.echosmedias.org/burkina-faso-le-gouvernement-serre-la-vis-sur-les-ong-pour-garantir-limpact-des-financements/",
+        "supports": "One-year grace period reporting",
+        "publisher": "Echos Medias"
+      },
+      {
+        "url": "https://www.shango.media/benin-web-burkina-faso-les-ong-devront-investir-80-de-leur-budget-sur-le-terrain-11880047",
+        "supports": "Confirmation that calculation methodology and sanctions are unpublished",
+        "publisher": "Shango Media (Benin Web TV syndication)"
+      },
+      {
+        "url": "https://www.unocha.org/burkina-faso",
+        "supports": "Humanitarian funding and response plan figures for Burkina Faso",
+        "publisher": "UN OCHA"
+      },
+      {
+        "url": "https://lefaso.net/spip.php?article149302=",
+        "supports": "17 September 2026 decree on convention de siège approval procedure",
+        "publisher": "leFaso.net"
+      }
+    ],
+    "author_role": "Political Analyst",
+    "author_role_slug": "political-analyst",
+    "reading_time_minutes": 4,
+    "published_at": "2026-09-28 07:56:45.992006+00",
+    "approved_at": "2026-09-28 07:56:45.992006+00",
+    "website_section": "News",
+    "related_content": [],
+    "newsletter_product": "The Sahel Brief",
+    "newsletter_cta": "Subscribe for continuing coverage of Sahel civil-society regulation.",
+    "ai_disclosure": "Produced by The Global Analyst's AI-powered newsroom and reviewed through its verification workflow.",
+    "confidence": "0.750",
+    "verification_state": "verified",
+    "featured": false,
+    "publication_approved": true,
+    "publication_status": "published"
+  },
+  {
+    "canonical_key": "sahel-v1-chad-hcr-dans-sa-quatrieme-annee-le-conflit-a-1uia55e",
+    "slug": "chad-sudanese-refugee-surge-funding-gap",
+    "headline": "Sudanese refugee arrivals into Chad surge 20-fold as funding stalls near a fifth of target",
+    "teaser": "UNHCR says daily crossings into eastern Chad have jumped to more than 400 people, a twentyfold acceleration, while the regional refugee response remains starved of cash.",
+    "summary": "UNHCR's 25 September 2026 Geneva briefing reported a twentyfold surge in daily Sudanese refugee arrivals into eastern Chad, to over 400 people a day, alongside a regional response plan that is only 18-20% funded against a $1.6bn target, with a Tine transit centre already overwhelmed.",
+    "body_markdown": "More than 400 people a day are now crossing into eastern Chad from Sudan, a roughly twentyfold increase over the daily rate seen in previous months, UNHCR said at a Geneva briefing on 25 September 2026. The figure was delivered by Mamadou Dian Balde, UNHCR's Regional Refugee Coordinator for the Sudan Situation, who told reporters via video link from Nairobi that arrivals at the Adré and Tiné border areas had accelerated sharply over the preceding week. Reuters, Al Jazeera, Arab News and other outlets reported the same figures the same day, all citing UNHCR as the source.\n\nThe acceleration coincides with a funding collapse. Reuters wire copy quoted UNHCR as saying only 18% of the $1.6 billion sought this year for the regional Sudan refugee response had been received; UNHCR's own briefing note puts the figure at 20%. The discrepancy between the agency's published note and its spoken briefing to journalists has not been resolved in available reporting, and readers should treat the funding share as roughly one-fifth of target rather than a precise figure. Almost 1 million Sudanese refugees have crossed into Chad since April 2023, when Sudan's civil war between the army and the Rapid Support Forces began, with more than 55,000 arriving in 2026 alone.\n\nA transit centre in Tine is already sheltering more than 4,300 people amid shortages of shelter, water, sanitation and protection services, Balde said. More than 190,000 refugees along the Chad border are in difficult conditions, with most surviving on less than half the minimum daily water requirement — a figure confirmed independently by UNHCR's own briefing note as well as multiple wire services quoting Balde.\n\nReuters attributed part of the funding shortfall to cuts by the Trump administration and other donor countries over the past year, though no itemized donor-by-donor breakdown was provided. UNHCR has not published a quantified split between conflict-driven flight — intensified fighting in Darfur, Kordofan and Blue Nile, including airstrikes and drone attacks — and drought as drivers of the September surge, and no Chadian government arrival tallies were found to compare against UNHCR's field figures.\n\nThe surge follows a volatile pattern at this border. Chad closed its eastern crossings with Sudan on 23 February 2026 after clashes tied to Sudan's civil war killed five Chadian soldiers and three civilians near Tine, with the government citing repeated incursions by warring parties. Chad's government said the closure would last until further notice, though some humanitarian exceptions were allowed. Weeks later, a drone strike on the Chadian border town of Tiné on 19 March 2026 killed civilians and prompted a further closure of crossings with Sudan, underlining how the same corridor has repeatedly oscillated between humanitarian lifeline and security flashpoint. UNHCR and the World Food Programme had already warned in April 2026 of a $428 million funding gap threatening aid for over a million Sudanese refugees in Chad as the conflict entered its fourth year.\n\nUNHCR warned that unmet basic needs risk pushing more Sudanese refugees toward dangerous secondary migration toward Europe after failed attempts to secure safety in Chad. What to watch: whether donor pledges materialize before the Tine transit centre's capacity is further exceeded; any renewed border restrictions if fighting or drone strikes near Tine escalate again; and whether Chad's own arrival statistics are published to test UNHCR's field data.",
+    "countries": [
+      "Chad",
+      "Sudan"
+    ],
+    "topics": [
+      "refugee crisis",
+      "humanitarian funding",
+      "displacement",
+      "Sudan conflict spillover"
+    ],
+    "citations": [
+      {
+        "url": "https://www.unhcr.org/news/briefing-notes/unhcr-its-fourth-year-sudan-conflict-drives-new-displacement-chad-funding-falls",
+        "supports": "Twentyfold surge figure, border crossing data, 20% funding figure, water/shelter figures",
+        "publisher": "UNHCR"
+      },
+      {
+        "url": "https://www.usnews.com/news/world/articles/2026-09-25/number-of-sudanese-fleeing-to-chad-surges-20-fold-as-aid-runs-dry-un-says",
+        "supports": "Independent corroboration of surge, 18% funding figure, and donor cuts context",
+        "publisher": "Reuters via U.S. News"
+      },
+      {
+        "url": "https://www.aljazeera.com/news/2026/9/25/more-than-55000-sudanese-refugees-flee-to-chad-as-un-calls-for-funding",
+        "supports": "Arrival figures and funding call",
+        "publisher": "Al Jazeera"
+      },
+      {
+        "url": "https://theprint.in/world/number-of-sudanese-fleeing-to-chad-surges-20-fold-as-aid-runs-dry-un-says/3053524/",
+        "supports": "18% funding figure",
+        "publisher": "Reuters via ThePrint"
+      },
+      {
+        "url": "https://von.gov.ng/over-55000-sudanese-refugees-flee-to-chad/",
+        "supports": "Tine transit centre population and water access figures",
+        "publisher": "Voice of Nigeria"
+      },
+      {
+        "url": "https://news.un.org/fr/story/2026/04/1158667",
+        "supports": "April 2026 funding gap warning context",
+        "publisher": "UN Info"
+      },
+      {
+        "url": "https://www.usnews.com/news/world/articles/2026-02-23/chad-closes-border-with-sudan-after-clashes-kill-five-soldiers",
+        "supports": "February 2026 border closure context",
+        "publisher": "Reuters via U.S. News"
+      },
+      {
+        "url": "https://en.wikipedia.org/wiki/2026_in_Chad",
+        "supports": "March 2026 drone strike and second border closure",
+        "publisher": "Wikipedia"
+      }
+    ],
+    "author_role": "General Analyst",
+    "author_role_slug": "general-analyst",
+    "reading_time_minutes": 4,
+    "published_at": "2026-09-28 07:56:45.992006+00",
+    "approved_at": "2026-09-28 07:56:45.992006+00",
+    "website_section": "News",
+    "related_content": [],
+    "newsletter_product": "The Sahel Brief",
+    "newsletter_cta": "Subscribe for continuing coverage of the Sudan-Chad displacement crisis.",
+    "ai_disclosure": "Produced by The Global Analyst's AI-powered newsroom and reviewed through its verification workflow.",
+    "confidence": "0.750",
+    "verification_state": "verified",
+    "featured": false,
+    "publication_approved": true,
+    "publication_status": "published"
+  }
+]
