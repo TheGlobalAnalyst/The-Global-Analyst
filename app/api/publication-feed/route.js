@@ -49,6 +49,7 @@ export async function GET() {
       confidence: article.confidence,
       verification_state: article.verification_state,
       featured: article.featured,
+      approved_at: article.approved_at,
       publication_approved: true,
       publication_status: 'published',
     }));
