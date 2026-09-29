@@ -41,7 +41,7 @@ export default async function Home(){
           <div>
             <div className="kicker" style={{color:'white'}}>Daily newsletter</div>
             <h2>The Sahel Brief</h2>
-            <p>The essential daily briefing on Mali, Niger, Burkina Faso, Mauritania, Chad and the wider Sahel — with links to our strongest original reporting and analysis.</p>
+            <p>Start the day knowing what changed across the Sahel. Broad multilingual monitoring, regional context and verification bring the developments worth your attention into focus.</p>
           </div>
           <Link href="/newsletters" className="newsletterButton">Explore newsletters →</Link>
         </div>
@@ -64,7 +64,7 @@ export default async function Home(){
       </section>
 
       <div className="aiBand">
-        <div className="container"><strong>AI-powered news and analysis.</strong> The Global Analyst uses an AI-powered newsroom to discover, research, verify and edit large volumes of information every day.</div>
+        <div className="container"><strong>See more. Miss less. Understand what matters.</strong> Our newsroom monitors reporting across languages and sources, checks important claims, and connects new developments to the context readers need.</div>
       </div>
     </main>
   );

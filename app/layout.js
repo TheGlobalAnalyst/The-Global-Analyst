@@ -8,10 +8,10 @@ export const metadata = {
     default: 'The Global Analyst',
     template: '%s | The Global Analyst'
   },
-  description: 'AI-powered news and analysis from an independent analytical newsroom.',
+  description: 'Wider monitoring, verified reporting and lasting context on the developments that matter.',
   openGraph: {
     title: 'The Global Analyst',
-    description: 'AI-powered news and analysis',
+    description: 'See more. Miss less. Understand what matters. Verified reporting with wider context.',
     type: 'website',
     url: 'https://www.theglobalanalyst.com'
   }

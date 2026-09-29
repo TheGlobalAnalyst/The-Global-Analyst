@@ -3,6 +3,13 @@ import { getArticlesByAuthor } from '../../../lib/publication-source';
 
 export const dynamic = 'force-dynamic';
 
+const descriptions = {
+  'security-analyst':'Conflict, armed groups and security policy: what changed on the ground, what is confirmed and what remains uncertain.',
+  'political-analyst':'Governments, diplomacy and institutions: who gains influence, what changes in policy and what has moved beyond rhetoric.',
+  'economic-analyst':'Trade, mining, energy and public finance: who pays, who benefits and what changes in practice.',
+  'general-analyst':'The essential developments across the region, with the context and evidence needed to understand their significance.'
+};
+
 const names = {
   'security-analyst':'Security Analyst',
   'political-analyst':'Political Analyst',
@@ -20,7 +27,7 @@ export default async function AuthorPage({params}){
       <section className="pageHero"><div className="container">
         <div className="kicker">The Global Analyst</div>
         <h1>{display}</h1>
-        <p>Role-based analyst identity within The Global Analyst's AI-powered newsroom.</p>
+        <p>{descriptions[role] || 'Reporting and analysis from The Global Analyst.'}</p>
       </div></section>
       <section className="container authorList">
         {stories.map(story => (

@@ -6,7 +6,7 @@ export default function Footer(){
       <div className="container footerInner">
         <div>
           <div className="footerBrand">The Global Analyst</div>
-          <div className="footerTag">AI-powered news and analysis</div>
+          <div className="footerTag">See more. Miss less. Understand what matters.</div>
         </div>
         <div className="footerLinks">
           <Link href="/about">About</Link>
