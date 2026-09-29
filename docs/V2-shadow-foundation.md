@@ -12,12 +12,13 @@ Supabase migration history contains:
 3. `tga_v2_bounded_historical_context_retrieval`
 4. `tga_v2_bounded_premium_commissioning_context`
 5. `tga_v2_feedback_rule_conflict_guard`
+6. `tga_v2_idempotent_published_v1_shadow_ingest`
 
 The V2 tables cover entities and aliases, developments and lineage, claims and cited evidence, source intelligence, dossiers, watch items, feedback, versioned rules and conflicts, analyst personalities, premium commissions, and decision audit. All V2 tables have RLS enabled, with service-role-only access and no anon or authenticated policy.
 
 A selective seed from approved published V1 articles currently provides 19 developments, 60 claims, 85 evidence links across 53 source hosts, 15 research dossiers, and 48 unresolved watch items. Source hosts have deliberately unknown independence and origin classifications until assessed. Imported evidence is historical context, never fresh proof. Four explicit V2 policy rules and three distinct specialist profiles are active.
 
-`tga_v2_retrieve_development_context` returns a bounded, evidence-linked historical snapshot for one canonical key. `tga_v2_premium_commissioning_context` returns bounded recent developments, open watch questions, dossiers, active rules, specialist lenses and prior premium items for the fixed formats Analysis, Background and Did You Know. Both functions are executable by service_role only. The V2 n8n manual workflow successfully read both endpoints.
+`tga_v2_retrieve_development_context` returns a bounded, evidence-linked historical snapshot for one canonical key. `tga_v2_premium_commissioning_context` returns bounded recent developments, open watch questions, dossiers, active rules, specialist lenses and prior premium items for the fixed formats Analysis, Background and Did You Know. Both functions are executable by service_role only. The V2 n8n manual workflow successfully read both endpoints. An idempotent ingest RPC is installed; an admin-context repeat run returned zero new rows.
 
 Feedback is stored verbatim. `tga_v2_propose_rule_from_feedback` creates a proposed version and flags a same-key change against an active rule for review. It does not silently activate or replace the old rule.
 
@@ -26,6 +27,9 @@ Feedback is stored verbatim. `tga_v2_propose_rule_from_feedback` creates a propo
 - Premium context returned 18 recent developments, 18 watch questions, 12 dossiers, four rules and three specialist profiles in one bounded response.
 - Anon cannot execute either retrieval function; service_role can execute the development retrieval function.
 - The n8n V2 workflow was reloaded and its manual trigger and read nodes persisted.
+
+## Access boundary discovered
+A separate daily shadow ingest workflow (`aWSQp90xxkFjSgas`) has a 10:00 Europe/Berlin trigger and managed DEV credential, but remains **unpublished**. Its first manual call failed because that credential's `service_role` lacks SELECT on `public_articles`, `tga_v1_stories`, `tga_v1_claims`, `tga_v1_claim_evidence`, `tga_v1_signals`, and `tga_v1_research_dossiers`. Automatic approval review rejected the proposed persistent SELECT grant to these six V1 tables because the precise permission expansion had not been specifically authorized. No grant was applied, and the workflow will not be activated while this access is blocked. The V1.2 production workflow was not changed.
 
 ## Still experimental
 - Entity resolution and source dependency assessment are not populated.
