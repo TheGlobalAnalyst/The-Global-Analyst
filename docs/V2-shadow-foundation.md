@@ -18,6 +18,7 @@ Supabase migration history contains:
 8. `tga_v2_premium_candidate_readiness_gate`
 9. `tga_v2_correct_premium_readiness_48h_window`
 10. `tga_v2_idempotent_country_entity_links`
+11. `tga_v2_bounded_daily_selection_context`
 
 The V2 tables cover entities and aliases, developments and lineage, claims and cited evidence, source intelligence, dossiers, watch items, feedback, versioned rules and conflicts, analyst personalities, premium commissions, and decision audit. All V2 tables have RLS enabled, with service-role-only access and no anon or authenticated policy.
 
@@ -26,6 +27,9 @@ A selective seed from approved published V1 articles currently provides 19 devel
 `tga_v2_retrieve_development_context` returns a bounded, evidence-linked historical snapshot for one canonical key. `tga_v2_premium_commissioning_context` returns bounded recent developments, open watch questions, dossiers, active rules, specialist lenses and prior premium items for the fixed formats Analysis, Background and Did You Know. Both functions are executable by service_role only. The V2 n8n manual workflow successfully read both endpoints. An idempotent ingest RPC is installed; an admin-context repeat run and a managed-credential n8n repeat run returned zero new rows.
 
 Feedback is stored verbatim. `tga_v2_propose_rule_from_feedback` creates a proposed version and flags a same-key change against an active rule for review. It does not silently activate or replace the old rule.
+
+## V1.2-based V2 selection integration
+The unpublished V2 copy now routes `Recent DEV Story Memory` through `Retrieve V2 Editorial Context — DEV` before `Editorial Packet`. The new POST calls `tga_v2_daily_selection_context` with the existing managed `Supabase account 2` credential. The RPC returns a bounded selection context (four active rules, up to eight developments and eight watch questions) marked as historical only and requiring fresh evidence. The packet builder still reads the original recent V1.2 stories by node reference, and adds `v2_context` to the selection payload. This is a selection-context integration, not a premium generator. Reload verified both new edges, the saved packet code, the unpublished workflow, and the absence of `Canonical Payload` → `Persist TGA V1 Run`. No paid or publishing execution was triggered.
 
 ## Validation
 - Retrieved claims included source URLs, verification state, `historical_only=true`, and `requires_fresh_evidence=true`.
@@ -56,7 +60,7 @@ A service-role-only `tga_v2_premium_candidate_readiness(date)` RPC returns a bou
 - No V2 output is authorized to publish. V1.2 schedule, dispatch receipts and first unattended run still need operational observation.
 
 ## Next implementation sequence
-0. Feed bounded V2 memory and rules into the duplicated V1.2-based selection, research and verification stages, preserving the existing canonical output contract. Keep the copied publication edge disconnected until shadow validation.
+0. Selection now receives bounded V2 memory and rules. Extend targeted context into research and verification while preserving the existing canonical output contract. Keep the copied publication edge disconnected until shadow validation.
 1. Observe the first unattended V1.2 run and verify website, Buttondown, X and LinkedIn receipts; observe the next 10:00 V2 ingestion execution.
 2. Add fresh multilingual source discovery and evidence capture, assess source origin/dependencies, then independently verify current claims. Keep imported V1 evidence historical.
 3. Resolve recurring actors and link follow-ups to developments; ingest Publisher feedback and review rule conflicts.
