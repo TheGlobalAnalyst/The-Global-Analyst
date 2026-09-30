@@ -14,6 +14,8 @@ Supabase migration history contains:
 5. `tga_v2_feedback_rule_conflict_guard`
 6. `tga_v2_idempotent_published_v1_shadow_ingest`
 7. `tga_v2_service_role_read_published_v1_sources`
+8. `tga_v2_premium_candidate_readiness_gate`
+9. `tga_v2_correct_premium_readiness_48h_window`
 
 The V2 tables cover entities and aliases, developments and lineage, claims and cited evidence, source intelligence, dossiers, watch items, feedback, versioned rules and conflicts, analyst personalities, premium commissions, and decision audit. All V2 tables have RLS enabled, with service-role-only access and no anon or authenticated policy.
 
@@ -31,6 +33,9 @@ Feedback is stored verbatim. `tga_v2_propose_rule_from_feedback` creates a propo
 
 ## Daily shadow ingestion
 The user explicitly approved `service_role` SELECT on the six published V1 source tables: `public_articles`, `tga_v1_stories`, `tga_v1_claims`, `tga_v1_claim_evidence`, `tga_v1_signals`, and `tga_v1_research_dossiers`. The DEV migration grants only these reads. `has_table_privilege` verified all six. The separate daily shadow ingest workflow (`aWSQp90xxkFjSgas`) uses the managed `Supabase account 2` credential and a 10:00 Europe/Berlin schedule. Its manual run succeeded with `shadow_only=true` and zero new rows on an idempotent repeat. Workflow publication was confirmed in n8n. V1.2 production workflow was not changed.
+
+## Premium readiness gate
+A service-role-only `tga_v2_premium_candidate_readiness(date)` RPC returns a bounded shortlist of recent developments, a deterministic suggested specialist and explicit research and verification blockers. Fresh evidence is a rolling 48-hour window ending at the earlier of the edition day's end or now. Historical imported V1 evidence is never counted as current. The manual V2 n8n workflow now calls the RPC after premium context retrieval, using the same managed DEV credential. A complete manual run succeeded and persisted after reload. The current 19 candidates have zero fresh research sources and zero verification-ready candidates; no premium piece was commissioned or published. The specialist suggestion is provisional routing, not editorial selection.
 
 ## Still experimental
 - Entity resolution and source dependency assessment are not populated.
