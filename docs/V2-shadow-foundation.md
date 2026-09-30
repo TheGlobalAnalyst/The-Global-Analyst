@@ -2,7 +2,7 @@
 
 ## Boundary
 - V1.2 production workflow: `ETEqN6j1vzlIYx7f` remains the published daily engine at 07:25 Europe/Berlin. No V2 publishing edge is connected to it.
-- V2 manual shadow workflow: `vMkvx2gjPqJ5zNNk` is separate and unpublished. Its existing steps read only from Supabase DEV using the managed `Supabase account 2` credential.
+- V2 manual shadow workflow: `vMkvx2gjPqJ5zNNk` is separate and unpublished. It uses the managed `Supabase account 2` credential to idempotently refresh approved published V1 memory in DEV, then read memory, premium context and candidate readiness.
 - DEV Supabase project: `yugoifzlhfubxefawqqs`. Production Supabase project is outside this work.
 
 ## Implemented in DEV
@@ -39,13 +39,13 @@ The user explicitly approved `service_role` SELECT on the six published V1 sourc
 Nine unambiguous country labels from published development metadata were seeded as location entities and linked to 19 developments with 30 geographic-context relations. `tga_v2_sync_country_entities()` is idempotent and service-role-only; it does not infer organizations or people. An immediate repeat returned zero new entities and links. Future unrecognized country labels require deliberate mapping.
 
 ## Premium readiness gate
-A service-role-only `tga_v2_premium_candidate_readiness(date)` RPC returns a bounded shortlist of recent developments, a deterministic suggested specialist and explicit research and verification blockers. Fresh evidence is a rolling 48-hour window ending at the earlier of the edition day's end or now. Historical imported V1 evidence is never counted as current. The manual V2 n8n workflow now calls the RPC after premium context retrieval, using the same managed DEV credential. A complete manual run succeeded and persisted after reload. The current 19 candidates have zero fresh research sources and zero verification-ready candidates; no premium piece was commissioned or published. The specialist suggestion is provisional routing, not editorial selection.
+A service-role-only `tga_v2_premium_candidate_readiness(date)` RPC returns a bounded shortlist of recent developments, a deterministic suggested specialist and explicit research and verification blockers. Fresh evidence is a rolling 48-hour window ending at the earlier of the edition day's end or now. Historical imported V1 evidence is never counted as current. The manual V2 n8n workflow now refreshes approved published V1 memory before the read chain and calls the RPC after premium context retrieval, using the same managed DEV credential. A complete one-button manual run succeeded across all six nodes; the refresh receipt added zero rows on an idempotent repeat. The current 19 candidates have zero fresh research sources and zero verification-ready candidates; no premium piece was commissioned or published. The specialist suggestion is provisional routing, not editorial selection.
 
 ## Still experimental
 - Only explicit country links are populated; actor/entity resolution and source dependency assessment remain open.
 - Watch items were seeded from historical unresolved questions; they need fresh checks and editorial triage.
 - Cross-key natural-language rule contradiction detection, rule activation review, and ongoing feedback ingestion are pending.
-- Premium candidate evaluation, dynamic specialist assignment, three distinct drafts, verification, outcomes and audit population are pending.
+- Premium editorial selection, dynamic specialist commissioning, three distinct drafts, independent verification, outcomes and audit population are pending. The provisional specialist router is present, but not yet a commission.
 - No V2 output is authorized to publish. V1.2 schedule, dispatch receipts and first unattended run still need operational observation.
 
 ## Next implementation sequence
