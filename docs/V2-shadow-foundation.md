@@ -49,8 +49,8 @@ A service-role-only `tga_v2_premium_candidate_readiness(date)` RPC returns a bou
 - No V2 output is authorized to publish. V1.2 schedule, dispatch receipts and first unattended run still need operational observation.
 
 ## Next implementation sequence
-1. Resolve recurring entities and link development lineage; assess original versus syndicated source chains.
-2. Ingest new V1 outcomes into V2 shadow memory with provenance and bounded retrieval.
-3. Add feedback intake and conflict review; preserve rule versions.
-4. Commission Analysis, Background and Did You Know in shadow with dynamic specialist choice and audit trails.
-5. Research, verify and compare shadow output against current V1.2 coverage before any production connection.
+1. Observe the first unattended V1.2 run and verify website, Buttondown, X and LinkedIn receipts; observe the next 10:00 V2 ingestion execution.
+2. Add fresh multilingual source discovery and evidence capture, assess source origin/dependencies, then independently verify current claims. Keep imported V1 evidence historical.
+3. Resolve recurring actors and link follow-ups to developments; ingest Publisher feedback and review rule conflicts.
+4. Commission Analysis, Background and Did You Know from fresh evidence in shadow with specialist selection, cost accounting, decision audit and independent verification.
+5. Compare repeated shadow editions with V1.2 and connect V2 production only after editorial and operational gates pass.
