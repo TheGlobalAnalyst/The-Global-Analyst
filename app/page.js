@@ -22,7 +22,7 @@ export default async function Home(){
 
       <section className="section" id="news">
         <div className="container">
-          <div className="sectionHeader"><h2 className="sectionTitle">Latest News</h2></div>
+          <div className="sectionHeader"><h2 className="sectionTitle">Latest News</h2><Link href="/news">All news →</Link></div>
           <div className="storyGrid">
             {latestNews.map(story => (
               <article className="storyCard" key={story.canonical_key}>

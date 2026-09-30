@@ -13,7 +13,7 @@ export default function Header(){
         </Link>
       </div>
       <div className="container nav">
-        <Link href="/#news">News</Link>
+        <Link href="/news">News</Link>
         <Link href="/#analysis">Analysis</Link>
         <Link href="/regions">Regions</Link>
         <Link href="/newsletters">Newsletters</Link>
