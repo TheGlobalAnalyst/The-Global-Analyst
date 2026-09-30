@@ -16,6 +16,7 @@ Supabase migration history contains:
 7. `tga_v2_service_role_read_published_v1_sources`
 8. `tga_v2_premium_candidate_readiness_gate`
 9. `tga_v2_correct_premium_readiness_48h_window`
+10. `tga_v2_idempotent_country_entity_links`
 
 The V2 tables cover entities and aliases, developments and lineage, claims and cited evidence, source intelligence, dossiers, watch items, feedback, versioned rules and conflicts, analyst personalities, premium commissions, and decision audit. All V2 tables have RLS enabled, with service-role-only access and no anon or authenticated policy.
 
@@ -32,13 +33,16 @@ Feedback is stored verbatim. `tga_v2_propose_rule_from_feedback` creates a propo
 - The n8n V2 workflow was reloaded and its manual trigger and read nodes persisted.
 
 ## Daily shadow ingestion
-The user explicitly approved `service_role` SELECT on the six published V1 source tables: `public_articles`, `tga_v1_stories`, `tga_v1_claims`, `tga_v1_claim_evidence`, `tga_v1_signals`, and `tga_v1_research_dossiers`. The DEV migration grants only these reads. `has_table_privilege` verified all six. The separate daily shadow ingest workflow (`aWSQp90xxkFjSgas`) uses the managed `Supabase account 2` credential and a 10:00 Europe/Berlin schedule. Its manual run succeeded with `shadow_only=true` and zero new rows on an idempotent repeat. Workflow publication was confirmed in n8n. V1.2 production workflow was not changed.
+The user explicitly approved `service_role` SELECT on the six published V1 source tables: `public_articles`, `tga_v1_stories`, `tga_v1_claims`, `tga_v1_claim_evidence`, `tga_v1_signals`, and `tga_v1_research_dossiers`. The DEV migration grants only these reads. `has_table_privilege` verified all six. The separate daily shadow ingest workflow (`aWSQp90xxkFjSgas`) uses the managed `Supabase account 2` credential and a 10:00 Europe/Berlin schedule. Its manual run succeeded with `shadow_only=true` and zero new rows on an idempotent repeat. Workflow publication was confirmed in n8n. A second managed-credential step now links country entities after ingestion; manual end-to-end rerun returned zero additions and the revised workflow was published. V1.2 production workflow was not changed.
+
+## Explicit geographic entities
+Nine unambiguous country labels from published development metadata were seeded as location entities and linked to 19 developments with 30 geographic-context relations. `tga_v2_sync_country_entities()` is idempotent and service-role-only; it does not infer organizations or people. An immediate repeat returned zero new entities and links. Future unrecognized country labels require deliberate mapping.
 
 ## Premium readiness gate
 A service-role-only `tga_v2_premium_candidate_readiness(date)` RPC returns a bounded shortlist of recent developments, a deterministic suggested specialist and explicit research and verification blockers. Fresh evidence is a rolling 48-hour window ending at the earlier of the edition day's end or now. Historical imported V1 evidence is never counted as current. The manual V2 n8n workflow now calls the RPC after premium context retrieval, using the same managed DEV credential. A complete manual run succeeded and persisted after reload. The current 19 candidates have zero fresh research sources and zero verification-ready candidates; no premium piece was commissioned or published. The specialist suggestion is provisional routing, not editorial selection.
 
 ## Still experimental
-- Entity resolution and source dependency assessment are not populated.
+- Only explicit country links are populated; actor/entity resolution and source dependency assessment remain open.
 - Watch items were seeded from historical unresolved questions; they need fresh checks and editorial triage.
 - Cross-key natural-language rule contradiction detection, rule activation review, and ongoing feedback ingestion are pending.
 - Premium candidate evaluation, dynamic specialist assignment, three distinct drafts, verification, outcomes and audit population are pending.
