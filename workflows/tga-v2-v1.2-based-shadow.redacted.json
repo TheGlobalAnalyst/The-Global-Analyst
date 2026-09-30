@@ -1,0 +1,1403 @@
+{
+  "name": "The Sahel Brief V2 — V1.2-Based DEV Shadow",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const queries = [\n  ['Mali broad FR','(Mali OR Bamako) when:2d'],\n  ['Mali security FR','(Mali OR Bamako OR Tombouctou OR Gao OR Mopti OR Kidal) (attaque OR armée OR décret OR gouvernement OR humanitaire) when:2d'],\n  ['Mali economy EN','Mali (budget OR gold OR mining OR economy OR investment) when:2d'],\n  ['Mali labor FR','Mali (grève OR préavis syndical OR conflit social OR travailleurs) when:2d'],\n  ['Mali labor EN','Mali (strike OR union OR labor dispute OR workers) when:2d'],\n  ['Niger broad FR','(Niger OR Niamey) -Nigeria -\"Niger State\" -\"Niger Delta\" when:2d'],\n  ['Niger security FR','(Niger OR Niamey OR Agadez OR Tillabéri OR Diffa) (attaque OR décret OR gouvernement OR humanitaire) -Nigeria when:2d'],\n  ['Niger economy EN','Niger (uranium OR oil OR mining OR budget OR investment) -Nigeria when:2d'],\n  ['Burkina broad FR','(\"Burkina Faso\" OR Ouagadougou) when:2d'],\n  ['Burkina security FR','(Burkina OR Ouagadougou OR Djibo OR Dori OR Boussouma) (attaque OR sécurité OR gouvernement OR humanitaire) when:2d'],\n  ['Burkina economy EN','\"Burkina Faso\" (gold OR mining OR budget OR economy OR investment) when:2d'],\n  ['Mauritania broad','(Mauritanie OR Mauritania OR Nouakchott) when:2d'],\n  ['Mauritania policy','(Mauritanie OR Nouakchott OR Nouadhibou) (décret OR gouvernement OR mines OR pêche OR migration OR sécurité OR finance) when:2d'],\n  ['Chad broad','(Tchad OR Chad OR N’Djamena OR Ndjamena) when:2d'],\n  ['Chad policy','(Tchad OR N’Djamena OR Abéché OR Lac Tchad) (décret OR attaque OR pétrole OR budget OR humanitaire OR nomination OR désarmement) when:2d'],\n  ['AES regional','(\"Alliance des Etats du Sahel\" OR \"Confédération AES\" OR \"Sahel states\") when:2d'],\n  ['Sahel institutions','(Sahel OR Mali OR Niger OR Burkina OR Mauritanie OR Tchad) (UNHCR OR OCHA OR ECOWAS OR CEDEAO OR Banque mondiale OR IMF OR African Union) when:2d'],\n  ['Sahel diplomacy EN','(Mali OR Niger OR \"Burkina Faso\" OR Mauritania OR Chad) (diplomacy OR sanctions OR agreement OR envoy) when:2d'],\n  ['Sahel security EN','(Mali OR Niger OR \"Burkina Faso\" OR Chad) (JNIM OR Islamic State OR attack OR killed OR displaced) when:2d'],\n  ['Sahel climate humanitarian','(Mali OR Niger OR Burkina OR Mauritania OR Chad) (OCHA OR UNHCR OR IOM OR WFP OR UNICEF OR flood OR drought) when:2d'],\n  ['Commercial mining','(Mali OR Niger OR \"Burkina Faso\" OR Mauritania OR Chad) (mine OR mining OR uranium OR gold OR oil OR gas) when:2d'],\n  ['Official decisions','(Mali OR Niger OR Burkina OR Mauritanie OR Tchad) (décret OR ordonnance OR loi OR conseil des ministres) when:2d'],\n  ['Arabic Sahel','(مالي OR النيجر OR بوركينا فاسو OR موريتانيا OR تشاد OR الساحل) when:2d'],\n  ['Cross-border Libya Algeria','(Sahel OR Mali OR Niger OR Chad) (Algeria OR Libya OR border OR pipeline) when:2d'],\n  ['Cross-border Sudan Chad','(Chad OR Tchad) (Sudan OR Soudan OR refugees OR border) when:2d'],\n  ['EU US Russia China Sahel','(Sahel OR Mali OR Niger OR Burkina OR Mauritania OR Chad) (EU OR European Union OR United States OR Russia OR China OR Turkey OR UAE) when:2d']\n];\nconst lookback = '2d';\nreturn queries.map(([feed,rawQuery]) => {\n  const query = rawQuery.replace('when:2d','when:'+lookback);\n  return {json:{feed,query,feed_url:'https://news.google.com/rss/search?q='+encodeURIComponent(query)+'&hl=fr&gl=FR&ceid=FR:fr'}};\n});"
+      },
+      "id": "3ce63fe3-18cb-4fa8-9cd1-0e5659784f0b",
+      "name": "Discovery Queries V1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -480,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "ac3e6f73-6fb7-4ca2-ac72-ab2b072909a1",
+      "name": "Loop Discovery Feeds",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -240,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.feed_url }}",
+        "options": {}
+      },
+      "id": "da0c1ecb-9774-45ae-ba2a-e8e3072c57d0",
+      "name": "Read Google News RSS",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        0,
+        240
+      ],
+      "alwaysOutputData": true,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const now=Date.now(), windowHours=96, cutoff=now-windowHours*3600*1000;\nconst reject={missing:0,undated:0,stale:0,duplicate:0,spam:0,off_scope:0};\nconst seenUrl=new Set(), seenTitle=new Set(), candidates=[];\nconst spam=/\\b(football|futbol|soccer|champions league|coupe d'afrique|\\bcan 2027\\b|eliminatoires? de la can|match|pronostic|cote de [0-9]|streaming|en direct live|regarder en direct|sport|etalon[s]? du burkina|olympi|loto|casino|betting|voyage|tourisme|hotel,hôtel|guide touristique|vols pas chers|wikipedia|country profile|profil pays|recrute|offre d'emploi|candidature|appel à candidatures|resultats? de recrutement|résultats? de recrutement|pr[eé]visions?(?: et conditions?)? m[eé]t[eé]o|conditions? m[eé]t[eé]o|weather forecast|weather conditions|profil joueur.joueuse|profil joueur|player profile|fiba u[0-9]+)\\b/i;\nconst junkShape=/^[+~#*\\[\\]√!]{2,}|\\b(seo|watch live|free live|click here|flux gratuits?|diffusion en direct|gratuit en direct)\\b/i;\nconst falseNiger=/\\b(niger state|niger delta|minna, nigeria|nigeria's niger|nigerian state of niger|new bussa|borgu district)\\b/i;\nconst stripSource=t=>t.replace(/\\s[-–—]\\s[^-–—]+$/,'').trim();\nconst norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();\nconst countryTags=t=>{const a=[];if(/\\bmali\\b|malien(?:ne)?s?|bamako|tombouctou|mopti|\\bgao\\b|dioura|sevare|sévaré|loulo|gounkoto/i.test(t))a.push('Mali');if(/\\bniger\\b|nig[eé]rien(?:ne)?s?|niamey|agadez|tillab[eé]ri/i.test(t))a.push('Niger');if(/burkina|burkinab[eè]s?|ouagadougou|boussouma/i.test(t))a.push('Burkina Faso');if(/mauritan|nouakchott|nouadhibou/i.test(t))a.push('Mauritania');if(/\\btchad\\b|tchadien(?:ne)?s?|\\bchad\\b|n.djamena|ndjamena/i.test(t))a.push('Chad');if(!a.length&&/\\bsahel\\b|\\baes\\b|cedeao|ecowas|liptako|g5 sahel/i.test(t))a.push('Regional');return a;};\nfor(const item of $input.all()){\n const a=item.json, title=String(a.title||'').trim(), url=String(a.link||'').trim();\n if(!title||!url){reject.missing++;continue;}\n const headline=stripSource(title), when=a.isoDate||a.pubDate||a.published, ts=Date.parse(when||'');\n if(!Number.isFinite(ts)){reject.undated++;continue;}\n if(ts<cutoff||ts>now+3600*1000){reject.stale++;continue;}\n if(spam.test(headline)||junkShape.test(headline)||falseNiger.test(headline)||/^chad (gilbert|smith|tracy|vangaalen)\\b/i.test(headline)){reject.spam++;continue;}\n const countries=countryTags(headline);\n if(!countries.length){reject.off_scope++;continue;}\n const urlKey=url.replace(/[?#].*$/,'').toLowerCase(), titleKey=norm(headline);\n if(seenUrl.has(urlKey)||seenTitle.has(titleKey)){reject.duplicate++;continue;}\n seenUrl.add(urlKey);seenTitle.add(titleKey);\n const source=String(title.slice(headline.length)).replace(/^\\s*[-–—]\\s*/,'').trim()||'Unknown';\n candidates.push({headline,title,source,url,published_at:new Date(ts).toISOString(),countries});\n}\nconst stop=new Set('le la les des de du d un une et en au aux a à sur pour dans par avec plus ce cette ces est sont son sa ses ne pas qui que qu qu au the a an and of in on for to from by with new says as at du mali niger burkina faso mauritanie mauritania tchad chad sahel 2026 2027'.split(/\\s+/));\nconst terms=t=>new Set(norm(t).split(/\\s+/).filter(w=>w.length>=4&&!stop.has(w)));\nconst tf=new Map();for(const c of candidates){c.tokens=terms(c.headline);for(const w of c.tokens)tf.set(w,(tf.get(w)||0)+1);}\nconst clusters=[];\nfor(const c of candidates){\n let best=null,bestScore=0;\n for(const g of clusters){\n  if(!c.countries.some(x=>g.countries.includes(x)))continue;\n  const shared=[...c.tokens].filter(w=>g.tokens.has(w));\n  const rare=shared.filter(w=>(tf.get(w)||999)<=12&&w.length>=5);\n  const union=new Set([...c.tokens,...g.tokens]).size;\n  const j=union?shared.length/union:0;\n  const score=j+(rare.length?0.25:0);\n  if((j>=0.58&&shared.length>=3)||(rare.length>=1&&shared.length>=2&&j>=0.30))if(score>bestScore){best=g;bestScore=score;}\n }\n if(!best){clusters.push({headline:c.headline,countries:[...c.countries],tokens:c.tokens,sources:[c],latest:c.published_at});}\n else{best.sources.push(c);for(const x of c.countries)if(!best.countries.includes(x))best.countries.push(x);if(c.published_at>best.latest)best.latest=c.published_at;}\n}\nconst merged=[];\nfor(const g of clusters){\n let target=null;\n for(const h of merged){\n  if(!g.countries.some(x=>h.countries.includes(x)))continue;\n  let match=false;\n  for(const x of g.sources)for(const y of h.sources){\n   const shared=[...x.tokens].filter(w=>y.tokens.has(w));\n   const generic=/^(anniversaire|independance|mauritanienne|burkinabe|ministere|assemblee|confederation|president|agence|information|diplomatie|internationale|securite|developpement|alliance|afrique|ouest|reconciliation|national|nationale|sahel|actualite|nouakchott)$/;\n   if(shared.length>=3&&shared.some(w=>w.length>=8&&(tf.get(w)||999)<=10&&!generic.test(w))){match=true;break;}\n   if(match)break;\n  }\n  if(match){target=h;break;}\n }\n if(target){target.sources.push(...g.sources);for(const x of g.countries)if(!target.countries.includes(x))target.countries.push(x);if(g.latest>target.latest)target.latest=g.latest;}\n else merged.push(g);\n}\nconst signal=/(attaqu|attack|tu[eé]s?|killed|mort[s]?|dead|bless[eé]|injur|enl[eè]v|kidnap|arm[eé]e|militar|d[eé]cret|decree|\\bloi\\b|\\blaw\\b|budget|accord|agreement|sign[eé]|arrest|justice|humanit|r[eé]fugi|d[eé]plac|displac|uranium|minier|mini[eè]re|\\bmine\\b|\\bor\\b|gold|p[eé]trole|\\boil\\b|\\bgaz\\b|\\bgas\\b|[eé]nerg|invest|financ|gr[eè]ve|strike|famin|inond|flood|[eé]lect|election|ministr|pr[eé]sident|president|diplom|\\baes\\b|cedeao|ecowas|\\bonu\\b|unhcr|ocha|d[eé]sarm|coordination mixte|num[eé]ris|digitalis|op[eé]ration|sanction|nomm[eé]|limog|destitu|fermeture|ouverture|interdict|d[eé]tenu|prison|lib[eé]r[eé])/i;\nconst routine=/^(AAO\\s*[-–]|appel d.offres)|\\b(comm[eé]more|anniversaire|c[eé]r[eé]monie|laur[eé]at|concours de talents|faux permis|palais de koulouba)\\b/i;\nmerged.sort((a,b)=>b.latest.localeCompare(a.latest));\nconst review=[],watch=[];\nfor(const g of merged){if((signal.test(g.headline)||g.sources.length>=2)&&!routine.test(g.headline))review.push(g);else watch.push(g);}\nconst iso=new Date(now).toISOString();\nconst evidence=g=>g.sources.map(s=>({title:s.headline,publisher:s.source,url:s.url,published_at:s.published_at}));\nconst summary={record_type:'run_summary',version:7,window_hours:windowHours,raw_items:$input.all().length,candidates_after_filters:candidates.length,development_bundles:merged.length,review_bundles:review.length,watch_bundles:watch.length,watchlists:[...new Set(watch.flatMap(g=>g.countries))].length,rejected:reject,country_counts:Object.fromEntries(['Mali','Niger','Burkina Faso','Mauritania','Chad','Regional'].map(k=>[k,merged.filter(g=>g.countries.includes(k)).length])),model_calls:0,estimated_external_api_eur:0,generated_at:iso};\nconst output=[{json:summary}];\nfor(let i=0;i<review.length;i++){const g=review[i];output.push({json:{record_type:'development_bundle',bundle_id:'sahel-'+iso.slice(0,10)+'-'+(i+1),development_signal:g.headline,countries:g.countries,published_at_latest:g.latest,evidence_count:g.sources.length,review_priority:'review',verification_status:'unverified; follow source links',sources:evidence(g)}});}\nfor(const country of ['Mali','Niger','Burkina Faso','Mauritania','Chad','Regional']){const subset=watch.filter(g=>g.countries.includes(country));if(!subset.length)continue;output.push({json:{record_type:'country_watchlist',country,signal_count:subset.length,review_priority:'watch',verification_status:'uncertain signals retained for newsroom triage',signals:subset.map(g=>({development_signal:g.headline,published_at_latest:g.latest,evidence_count:g.sources.length,sources:evidence(g)}))}});}\nreturn output;"
+      },
+      "id": "bc3d709e-d263-479f-8687-3601434f8472",
+      "name": "Normalize and Cluster",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const records = $('Normalize and Cluster').all().map(i => i.json);\nconst priorRaw = $('Recent DEV Story Memory').all().map(i => i.json);\nconst v2Context = $input.first().json;\nconst priorStories = priorRaw.flatMap(x => Array.isArray(x) ? x : (Array.isArray(x.data) ? x.data : [x])).filter(x => x && x.headline && x.edition_date && x.edition_date < new Date().toISOString().slice(0,10));\nconst normTitle = t => String(t||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();\nconst titleTerms = t => { const dict={ong:'ngo',organisations:'ngo',refugies:'refugee',refugie:'refugee',refugees:'refugee',soudan:'sudan',tchad:'chad',investir:'spend',depenses:'spend',terrain:'field',budgets:'budget',devront:'order',ngos:'ngo',unions:'union',syndicats:'union',septembre:'september',uranium:'uranium',financement:'financing',financements:'financing',greve:'strike',milliards:'billion',millions:'million',etats:'states',unis:'states',approuvent:'approves',fui:'fled',arrivees:'arrivals'}; return new Set(normTitle(t).split(' ').map(x=>dict[x]||(/^[0-9]{2,}$/.test(x)?x:x.replace(/s$/,''))).filter(x=>(x.length>2 || /^[0-9]{2,}$/.test(x)) && !/^(mali|niger|burkina|faso|sahel|chad|pour|avec|dans|from|that|this|into|the|les|des|une|and|sur|plus|their|into|after|since|year|2026)$/.test(x))); };\nconst sharedNumbers = (a,b) => { const nums=t=>new Set((normTitle(t).match(/\\d+/g)||[]).filter(x=>x!=='2026'&&x!=='2025')); const A=nums(a),B=nums(b); return [...A].some(x=>B.has(x)); };\nconst overlap = (a,b) => { const A=titleTerms(a), B=titleTerms(b); const common=[...A].filter(x=>B.has(x)).length; return common/Math.max(1,Math.min(A.size,B.size)); };\nconst matchPrior = b => { const title=b.development_signal||''; const cs=b.countries||[]; return priorStories.map(p=>({headline:p.headline,edition_date:p.edition_date,score:overlap(title,p.headline),common_country:cs.some(c=>(p.countries||[]).includes(c))})).filter(p=>p.common_country && (p.score>=0.42 || (sharedNumbers(title,p.headline) && [...titleTerms(title)].filter(x=>titleTerms(p.headline).has(x)).length>=1))).sort((a,b)=>b.score-a.score)[0]; };\nconst summary = records.find(r => r.record_type === 'run_summary') || {};\nconst bundles = records.filter(r => r.record_type === 'development_bundle');\nconst watchSignals = records.filter(r => r.record_type === 'country_watchlist').flatMap(w =>\n  (w.signals || []).map((s, i) => ({...s, bundle_id:`watch-${w.country}-${i+1}`, countries:[w.country], review_priority:'watch'}))\n);const impact = /(killed|tu[eé]|attack|attaqu|decree|d[eé]cret|law|loi|budget|uranium|gold|mine|minier|oil|p[eé]trole|gas|gaz|election|[eé]lect|agreement|accord|sanction|arrest|d[eé]ten|refugee|r[eé]fugi|displac|d[eé]plac|flood|inond|drought|s[eé]cheresse|strike|gr[eè]ve|chol[eé]ra|carburant|aide d.urgence|secours|blind[eé]|croissance|milliards?)/i;const high = /(coup d.[eé]tat|mutin|massacre|soldats? tu[eé]s?|hundred|pipeline|gazoduc|uranium|gr[eè]ve|pr[eé]avis syndical|loi de finances|budget|crise alimentaire|chol[eé]ra|r[eé]fugi[eé]s?|d[eé]plac[eé]s?|aide d.urgence|convoi.*carburant|blind[eé]s?|accord.*minier)/i;const weak = /(rumeur|faux|manipul[eé]e|n.ont pas [eé]t[eé] tenus|ne montre pas|sous.inform[eé]s?|efforts et les r[eé]sultats|anniversaire|c[eé]r[eé]monie|allocution|prise de parole|discours|prise de parole|plaide pour|appelle [aà] une|souhaite une|re[cç]u par|visite d.amiti[eé]|s.entretient avec|au c[oœ]ur des [eé]changes|pr[eé]pare sa prise de parole)/i;\nconst publisherCount = b => new Set((b.sources||[]).map(s=>String(s.publisher||'').trim().toLowerCase()).filter(Boolean)).size;\nconst highRisk = b => /(mutin|massacre|soldats? tu[eé]s?|ambush|embuscade|mass killing|arrestations? massives?|ran[cç]ons|conspiration|d[eé]stabilisation)/i.test(b.development_signal||'');\nconst sourceRisk = b => highRisk(b) && publisherCount(b)<2;\nconst editorialNoise = b => /(en direct comment[eé]|f[eê]te nationale|pi[eè]ces de rechange|nouvelle dynamique|fabriqu[eé]e|sur le point d.attaquer|on the verge of attacking|attacking our military positions|attaque imminente|alerte du PM|PM warns|d[eé]clare.*ONU|Jeux de l.AES|lutte traditionnelle|en visite|salue le r[oô]le|compos probables|N[eé]ma.*commer[cç]ant|accuse des puissances|d[eé]nonce le silence|vol de c[aâ]bles|[eé]tablissements scolaires|forum international des cultures|prise de parole|discours|allocution|c[eé]l[eè]bre|d[eé]nonce une conspiration)/i.test(b.development_signal||'');\nconst score = b => Math.min(Number(b.evidence_count) || 1,4)*1.2 + (impact.test(b.development_signal || '') ? 3 : 0) + (high.test(b.development_signal || '') ? 4 : 0) + (b.review_priority === 'review' ? 1 : 0) - (weak.test(b.development_signal || '') ? 8 : 0) - (sourceRisk(b) ? 12 : 0) + (publisherCount(b)>=2 ? 2 : 0) - (/\\b(ya buƙaci|ƙasashen|sake dawo|hulɗa)\\b/i.test(b.development_signal||'') ? 5 : 0);\nconst stableKey = b => { const basis=normTitle((b.countries||[]).join(' ')+' '+(b.development_signal||'')); let h=2166136261; for (let i=0;i<basis.length;i++) h=Math.imul(h ^ basis.charCodeAt(i),16777619)>>>0; return 'sahel-v1-'+basis.slice(0,45).replace(/ /g,'-')+'-'+h.toString(36); };\nconst all = [...bundles, ...watchSignals].map(b => { const prior=matchPrior(b); return {...b, canonical_key:stableKey(b), score:score(b)-(prior?7:0), source_risk:sourceRisk(b), independent_publisher_count:publisherCount(b), prior_coverage:prior||null, cluster_method:'deterministic_v9_prior_memory'}; });\nconst editionDate = new Date().toISOString().slice(0,10);\nconst noveltyExclusions = [];\nconst ranked = all.sort((a,b)=>b.score-a.score || (b.published_at_latest || '').localeCompare(a.published_at_latest || ''));\nconst seen = new Set();\nconst themes = new Set();\nconst countryCounts = Object.create(null);\nconst theme = b => { const t = [b.development_signal, ...(b.sources||[]).map(s=>s.title||s.headline||'')].join(' ').toLowerCase(); if (/conseil des r[eé]gulateurs du sahel|r[eé]gulateurs des t[eé]l[eé]communications/.test(t)) return 'aes_telecom_regulators'; if (/loulo|gounkoto|barrick|pr[eé]avis syndical|secteur minier menac[eé] de paralysie/.test(t)) return 'mali_mining_labor'; if (/soci[eé]t[eé].*(transport|logistique)|transport.*approvisionnement/.test(t)) return 'mali_transport_logistics'; if (/madaouela|atomic eagle|goviex/.test(t)) return 'madaouela'; if (/dioura/.test(t)) return 'dioura'; if (/blind[eé]s?|v[eé]hicules blind[eé]s?/.test(t)) return 'burkina_armored_vehicles'; if (/r[eé]fugi[eé]s? maliens/.test(t)) return 'malian_refugees'; if (/r[eé]fugi[eé]s?.*soudan|soudan.*r[eé]fugi[eé]s?|sudanese refugees|sudan.*displac/.test(t)) return 'sudan_chad_refugees'; if (/uranium.*niger|niger.*uranium/.test(t)) return 'niger_uranium'; return ''; };\nconst candidates = [];\nfunction take(pool, quota, lane) {\n  let added = 0;\n  for (const b of pool) {\n    if (added >= quota || candidates.length >= 25) break;\n    const key = b.canonical_key || b.source_url || b.development_signal;\n    const thematicKey = theme(b);\n    const named=(b.countries||[]).find(c=>String(b.development_signal||'').toLowerCase().startsWith(c==='Burkina Faso'?'burkina':c.toLowerCase())); const primary=named||(b.countries||[]).find(c=>c!=='Regional')||'Regional';\n    if ((countryCounts[primary]||0)>=4 || b.source_risk || editorialNoise(b) || b.score<5) continue;\n    if (!key || seen.has(key) || (thematicKey && themes.has(thematicKey))) continue;\n    seen.add(key); if (thematicKey) themes.add(thematicKey); countryCounts[primary]=(countryCounts[primary]||0)+1;\n    candidates.push({...b, selection_lane:lane});\n    added++;\n  }\n}\n// Reserve the strongest cross-border and consequential developments before country coverage.\ntake(ranked.filter(b => (b.countries || []).includes('Regional') && b.score>=5 && !weak.test(b.development_signal||'')), 2, 'regional');\ntake(ranked.filter(b => high.test(b.development_signal || '') && !b.source_risk), 4, 'high_impact');\nfor (const country of ['Mali','Niger','Burkina Faso','Mauritania','Chad'])\n  take(ranked.filter(b => (b.countries || []).includes(country)), 1, `country_${country}`);\ntake(ranked, 25, 'global');\ncandidates.forEach((b,i) => b.priority = Math.min(5, Math.max(1, Math.ceil((i+1)/5))));\nreturn [{json:{\n  run_type:'daily', config_profile:'balanced', edition_date:new Date().toISOString().slice(0,10),\n  input_window_start:new Date(Date.now()-56*3600*1000).toISOString(), input_window_end:new Date().toISOString(),\n  started_at:new Date().toISOString(), n8n_execution_id:$execution.id,\n  model_config:{selection:'claude-sonnet-5',research:'claude-sonnet-5',drafting:'claude-sonnet-5',verification:'claude-sonnet-5',final_editor:'claude-sonnet-5'},\n  discovery_summary:{...summary,novelty_exclusions:noveltyExclusions,packet_country_counts:countryCounts,packet_candidate_count:candidates.length,prior_story_count:priorStories.length,prior_matches:all.filter(b=>b.prior_coverage).length}, v2_context:{...v2Context,historical_context_only:true,requires_fresh_evidence:true}, candidates\n}}];\n"
+      },
+      "id": "792df730-21f5-43c7-8d9d-6945c2d0010d",
+      "name": "Editorial Packet",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\"model\":\"claude-sonnet-5\",\"max_tokens\":16000,\"thinking\":{\"type\":\"disabled\"},\"tools\":[{\"type\":\"web_search_20260318\",\"name\":\"web_search\",\"max_uses\":5,\"allowed_callers\":[\"direct\"]}],\"messages\":[{\"role\":\"user\",\"content\":\"Act as commissioning editor for The Sahel Brief. Return exactly one decision for every INPUT candidate canonical_key, with no missing or duplicate keys. Nonselected decisions should be compact: selected=false, rank=null, a one-sentence rationale, and no research questions. Cover all candidates even when fewer than seven are selected. For every candidate, return one decision: TOP_STORY, ANALYSIS, BACKGROUND, DID_YOU_KNOW, ALSO_IMPORTANT, MONITOR, or DROP. Scope: Mali, Niger, Burkina Faso, Mauritania, Chad, and materially relevant regional or external developments; reject geographic false positives and stories with no material new delta. Use the prior_coverage fields from DEV publication memory: repeated coverage needs an independently sourced, dated, material new delta and a precise account of what changed. Use v2_context as bounded historical editorial memory: apply active rules and review unresolved watch questions to prioritize fresh checks, but imported developments and cited historical claims are context only, never proof of a current event. They must not supply a fresh date, source, quotation, causal conclusion, or independent corroboration. Resolve any conflict with current primary evidence through research and verification; if fresh evidence is absent, MONITOR. Use live web search to check the underlying event date for the most plausible high-impact leads before selection. A feed publication timestamp is not the event date: identify the actual dated development in the last 96 hours and state that date and its supporting source in each selected rationale. If the dated primary development cannot be established, use MONITOR; do not infer novelty from a syndicated headline. A recycled older deal, speech or attack is not new merely because another outlet republished it. A similar headline can be an update only with a concrete new fact, so inspect the facts rather than automatically drop it. For casualty, mutiny, perpetrator, or other high-consequence allegations, require two genuinely independent original sources or a clear primary document plus independent reporting; a wire repeat of the same communiqué does not count. If the evidence is insufficient, use MONITOR and select a stronger candidate. Evaluate substantive new regulatory obligations, cross-border institutional decisions, and verified operational milestones for material impact even if the feed headline sounds ceremonial or administrative; first establish primary evidence or independent confirmation, implementation date and concrete consequences. Commission a complete news edition with 3 to 6 TOP_STORY items and 4 to 10 ALSO_IMPORTANT news briefs. Target exactly 4 TOP_STORY and 7 ALSO_IMPORTANT items for this run so the final edition remains above the seven-item minimum if later verification rejects individual candidates. Every selected item must be tied to a dated material development in the last 96 hours, but initial single-source candidates may be commissioned when specialist research can realistically seek primary evidence or independent corroboration; do not discard a plausible fresh item merely because the feed packet itself has only one source. Preserve coverage across Mali, Niger, Burkina Faso, Mauritania and Chad whenever the evidence supports it. If fewer than seven survive specialist research and verification, report the shortfall rather than inventing filler. Set selected=true for up to eleven genuinely useful, non-overlapping news items and false for every other candidate; do not fill a country quota with ceremony, sport, routine diplomatic praise or a speculative plan. Prefer independent primary evidence and material implementation over repeated official speech. For each selected item provide specialist_route (security, political, economic, or general), commission_brief, 3 research_questions, required_evidence, rationale, counterarguments, rank, classification, and canonical_key. Preserve canonical_key exactly. Return only valid JSON with keys decisions and slate_summary. INPUT: \"+JSON.stringify($json)}]})}}",
+        "options": {}
+      },
+      "id": "a1322102-d456-4098-a255-1ef754cd6d89",
+      "name": "Editorial Selection",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        720,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "anthropicApi": {
+          "id": "KB9IiSEFUTVD7Lcw",
+          "name": "Anthropic DEV ACCOUNT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const base=$('Editorial Packet').first().json;\nconst api=$input.first().json;\nconst texts=(api.content||[]).filter(x=>x.type==='text').map(x=>String(x.text||'')).filter(Boolean);\nfunction objects(text){const found=[];let start=-1,depth=0,quoted=false,escaped=false;for(let i=0;i<text.length;i++){const c=text[i];if(start<0){if(c==='{'){start=i;depth=1;}continue;}if(quoted){if(escaped)escaped=false;else if(c.charCodeAt(0)===92)escaped=true;else if(c==='\"')quoted=false;continue;}if(c==='\"')quoted=true;else if(c==='{')depth++;else if(c==='}'&&--depth===0){const raw=text.slice(start,i+1);try{found.push(JSON.parse(raw));}catch{}start=-1;}}return found;}\nconst candidates=base.candidates||[];\nconst expected=new Map(candidates.map(c=>[String(c.canonical_key||''),c]));\nlet parsed=texts.flatMap(objects).filter(x=>x&&Array.isArray(x.decisions)).at(-1)||null;\nlet recovery=null;\nif(!parsed){\n  const score=c=>Number(c.editorial_score??c.score??c.priority??c.rank??0);\n  const ordered=[...candidates].filter(c=>c.canonical_key).sort((a,b)=>score(b)-score(a));\n  const selected=ordered.slice(0,Math.min(10,ordered.length));\n  const date=new Date(String(base.edition_date||new Date().toISOString().slice(0,10))+'T00:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'});\n  parsed={decisions:ordered.map((c,i)=>({canonical_key:c.canonical_key,selected:i<selected.length,rank:i<selected.length?i+1:null,classification:i<Math.min(3,selected.length)?'TOP_STORY':i<selected.length?'ALSO_IMPORTANT':'DROP',rationale:(c.development_signal||c.headline||c.title||'Candidate development')+' Reported '+date+'. Deterministic recovery after malformed selection response.',specialist_route:c.specialist_route||c.route||'general',commission_brief:'Verify the newest material development, establish chronology and significance, and preserve source uncertainty.',research_questions:['What materially changed?','Which primary or independent sources confirm it?','What remains uncertain?'],required_evidence:['At least one valid source URL','A dated primary event'],counterarguments:[]})),slate_summary:{}};\n  recovery={mode:'deterministic_selection_fallback',reason:api.stop_reason==='max_tokens'?'model_output_truncated':'no_complete_decisions_json'};\n}\nconst clean=[];const seen=new Set();const unknown=[];const duplicates=[];\nfor(const d of parsed.decisions||[]){const key=String(d?.canonical_key||'');if(!expected.has(key)){unknown.push(key);continue;}if(seen.has(key)){duplicates.push(key);continue;}seen.add(key);clean.push(d);}\nfor(const key of expected.keys())if(!seen.has(key))clean.push({canonical_key:key,selected:false,rank:null,classification:'DROP',rationale:'Fail-closed default: selection omitted this candidate.',specialist_route:null,commission_brief:null,research_questions:[],required_evidence:[],counterarguments:[]});\nparsed.decisions=clean;\nconst publishClasses=['TOP_STORY','ALSO_IMPORTANT'];\nconst firstDate=text=>{const m=String(text||'').match(/(\\b\\d{1,2})\\s+(September|October|August)\\s+(20\\d{2})\\b/i);if(!m)return null;const month={august:'08',september:'09',october:'10'}[m[2].toLowerCase()];return m[3]+'-'+month+'-'+String(m[1]).padStart(2,'0');};\nconst minDate=String(base.input_window_start||'').slice(0,10),maxDate=String(base.edition_date||'');const exclusions=[];\nfor(const d of parsed.decisions){if(d.selected&&!publishClasses.includes(d.classification)){d.selected=false;d.rank=null;exclusions.push({canonical_key:d.canonical_key,reason:'invalid_publication_class'});continue;}if(!d.selected)continue;const c=expected.get(String(d.canonical_key))||{};const sourceDate=(c.sources||[]).map(s=>s.published_at||s.pubDate||s.isoDate).find(Boolean);const date=firstDate(d.rationale)||String(c.published_at_latest||c.published_at||c.publication_date||c.event_date||sourceDate||'').slice(0,10);if(!date||date<minDate||date>maxDate){d.selected=false;d.classification='MONITOR';d.rank=null;exclusions.push({canonical_key:d.canonical_key,event_date:date||null,reason:!date?'missing_dated_event':'event_outside_window'});}}\nlet selected=parsed.decisions.filter(d=>d.selected&&publishClasses.includes(d.classification));\nif(!selected.length&&candidates.length){const c=candidates[0];const d=parsed.decisions.find(x=>x.canonical_key===c.canonical_key);if(d){d.selected=true;d.rank=1;d.classification='TOP_STORY';d.rationale=String(d.rationale||c.development_signal||c.headline||'Recovered lead')+' [Sparse-edition recovery: strongest current candidate retained for research and verification.]';selected=[d];recovery={...(recovery||{}),mode:'sparse_edition_recovery'};}}\nselected.sort((a,b)=>Number(a.rank||999)-Number(b.rank||999)).forEach((d,i)=>d.rank=i+1);\nparsed.slate_summary={...(parsed.slate_summary||{}),selected_count:selected.length,top_story_count:selected.filter(d=>d.classification==='TOP_STORY').length,also_important_count:selected.filter(d=>d.classification==='ALSO_IMPORTANT').length,model_omission_count:clean.filter(d=>String(d.rationale||'').startsWith('Fail-closed')).length,unknown_keys_removed:unknown,duplicate_keys_removed:duplicates,freshness_exclusions:exclusions,recovery};\nif(!selected.length)throw new Error('No responsible candidate survived deterministic selection recovery');\nreturn [{json:{...base,selection:parsed,api_usage:{...(base.api_usage||{}),selection:api.usage||{}},recovery:{...(base.recovery||{}),selection:recovery}}}];"
+      },
+      "id": "0afbe7a7-d3e8-4a95-a35b-b5812572a7ec",
+      "name": "Parse Selection",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$input.first().json;\nconst selected=(x.selection.decisions||[]).filter(d=>d.selected).sort((a,b)=>(a.rank||99)-(b.rank||99));\nconst byKey=Object.fromEntries((x.candidates||[]).map(c=>[c.canonical_key,c]));\nconst commissions=selected.map(d=>{\n const c=byKey[d.canonical_key]||{};\n return {decision:d,candidate:{canonical_key:c.canonical_key,development_signal:c.development_signal,countries:c.countries||[],published_at_latest:c.published_at_latest,evidence_count:c.evidence_count||0,sources:(c.sources||[]).slice(0,8)}};\n});\nreturn [{json:{edition_date:x.edition_date,commissions}}];"
+      },
+      "id": "9ba4aef8-c685-455a-a5eb-bfaf54485ff6",
+      "name": "Research Brief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\"model\":\"claude-sonnet-5\",\"max_tokens\":5000,\"thinking\":{\"type\":\"disabled\"},\"tools\":[{\"type\":\"web_search_20260318\",\"name\":\"web_search\",\"max_uses\":5,\"allowed_callers\":[\"direct\"]}],\"messages\":[{\"role\":\"user\",\"content\":\"Act as the assigned specialist for ONE Sahel commission. Use live multilingual web search. Establish chronology, actors, primary and independent evidence, numbers, competing claims, uncertainty, context and implications. Distinguish confirmed fact, attributed claim and inference. Never invent a URL or quotation. Finish a valid JSON object before adding optional detail. Hard length limit: 1,200 words for TOP_STORY and 700 words for every supporting item. TOP_STORY max 5 chronology points, 6 findings, 7 source_refs and 4 claims; every supporting item max 3 chronology points, 4 findings, 4 source_refs and 2 claims. Citation text must be a short supporting excerpt or faithful note, never more than 30 words. Return only one valid JSON object with the top-level key dossier. The dossier fields are canonical_key, specialist, chronology, findings, historical_context, institutional_context, quantitative_evidence, competing_claims, uncertainties, implications, source_refs, claims and confidence. Each source_ref has url, title, publisher, primary and supports. Each claim has claim_text, claim_type, importance, verification_status, confidence and evidence; each evidence item has url, citation_text, relation and evidence_strength. INPUT: \"+JSON.stringify($json)}]}) }}",
+        "options": {}
+      },
+      "id": "9cfcb549-cdfb-48ca-9f3d-4350041ccd5a",
+      "name": "Specialist Research",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1648,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "anthropicApi": {
+          "id": "KB9IiSEFUTVD7Lcw",
+          "name": "Anthropic DEV ACCOUNT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const api=$input.item.json;\nconst src=$('Split Research Commissions').item.json;\nconst texts=(api.content||[]).filter(x=>x.type==='text').map(x=>String(x.text||'').trim()).filter(Boolean);\nconst attempts=[];\nfor(let i=texts.length-1;i>=0;i--){const t=texts[i];attempts.push(t);const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a>=0&&b>a)attempts.push(t.slice(a,b+1));}\nconst joined=texts.join('\\n').trim();const ja=joined.indexOf('{'),jb=joined.lastIndexOf('}');if(ja>=0&&jb>ja)attempts.push(joined.slice(ja,jb+1));\nlet parsed=null,lastError='no JSON object';\nfor(const c of attempts){\n try{parsed=JSON.parse(c);break;}catch(e){lastError=e.message;}\n const repaired=c.replace(/,\\s*([}\\]])/g,'$1').replace(/}\\s*{/g,'},{').replace(/]\\s*\"/g,'],\"').replace(/}\\s*\"/g,'},\"');\n try{parsed=JSON.parse(repaired);break;}catch(e){lastError=e.message;}\n}\nconst decision=(src.commission&&src.commission.decision)||{};const candidate=(src.commission&&src.commission.candidate)||{};\nconst key=decision.canonical_key||candidate.canonical_key||'unknown';\nconst fallback={canonical_key:key,specialist:decision.specialist_route||'general',chronology:[],findings:[],historical_context:'',institutional_context:'',quantitative_evidence:[],competing_claims:[],uncertainties:['Specialist response could not be parsed: '+lastError],implications:'',source_refs:(candidate.sources||[]).map(s=>({url:s.url,title:s.title,publisher:s.publisher,primary:false,supports:['candidate signal']})),claims:[],confidence:'low',parse_status:'fallback'};\nconst dossier=parsed?(parsed.dossier||parsed):fallback;\nif(!dossier.canonical_key)dossier.canonical_key=key;\nreturn {json:{...src,dossier,usage:api.usage||{},research_parse_error:parsed?null:lastError}};"
+      },
+      "id": "3bc799f2-ee8a-4a00-a33b-74bcadd07a85",
+      "name": "Parse Research Item",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$input.first().json;\nconst selected=(x.selection.decisions||[]).filter(d=>d.selected);\nreturn [{json:{edition_date:x.edition_date,decisions:selected,dossiers:x.research.dossiers||[]}}];"
+      },
+      "id": "5f03fb22-5987-4042-bb8e-c10dc262e53e",
+      "name": "Draft Brief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2304,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\"model\":\"claude-sonnet-5\",\"max_tokens\":18000,\"thinking\":{\"type\":\"disabled\"},\"messages\":[{\"role\":\"user\",\"content\":\"Write a complete English Sahel Brief from the supplied decisions and source-grounded dossiers. Create at most one story per selected canonical_key, with no invented additional stories, duplicate angles, or background briefs spun off the same development. Output every distinct selected decision and dossier, preserving its classification, and mark edition.slate_shortfall when there are fewer than 3 TOP_STORY and 4 ALSO_IMPORTANT items. Produce 3 to 6 TOP_STORY articles of 400-600 words and 4 to 10 ALSO_IMPORTANT news briefs of 80-180 words. ABSOLUTE LIMIT: all body_markdown values together must be at most 3,200 words; all other metadata must be concise. Do not reproduce dossiers, research notes, or long quotations. Use only supplied evidence. Attribute contested claims; preserve uncertainty and source URLs. Each TOP_STORY body_markdown must contain four to six distinct Markdown paragraphs separated by two newline escapes in its JSON string, with no paragraph over 130 words; each ALSO_IMPORTANT body must contain one or two short paragraphs. Enforce the 400-600 word top-story limit; do not expand one development to 1,000 words. Put the new fact first, then mechanism, evidence and uncertainties, and what to watch. Keep citation links on the claims they support. No generic openings, throat-clearing, hype, formulaic why-this-matters, fake balance, repetition or invented facts. Role byline must match the assigned specialist: Security Analyst, Political Analyst, Economic Analyst or General Analyst. The daily newsletter remains email-only; website-ready fields describe individual articles only. Return one compact valid JSON object with stories and edition, without code fences or commentary. Do not use raw double-quote characters inside any string value; use apostrophes instead. Finish and validate the JSON before responding. Each story: canonical_key, classification, position, slug, headline, teaser, summary, body_markdown, countries, topics, citations (url,publisher,supports), related_content, verification_state=\\\"draft\\\", confidence, author_role, reading_time_minutes, published_at, website_section (News|Analysis|Background), newsletter_product=\\\"The Sahel Brief\\\", newsletter_cta, ai_disclosure=\\\"Produced by The Global Analyst's AI-powered newsroom and reviewed through its verification workflow.\\\". Edition: title and dek. INPUT: \"+JSON.stringify($json)}]}) }}",
+        "options": {}
+      },
+      "id": "dd41269e-4fc1-4b18-889a-1dfdf732e7ab",
+      "name": "Draft Edition",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2528,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "anthropicApi": {
+          "id": "KB9IiSEFUTVD7Lcw",
+          "name": "Anthropic DEV ACCOUNT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const base=$('Draft Brief').first().json;\nconst api=$input.first().json;\nconst texts=(api.content||[]).filter(x=>x.type==='text').map(x=>String(x.text||'').trim()).filter(Boolean);\nconst attempts=[];for(let i=texts.length-1;i>=0;i--){const t=texts[i];attempts.push(t);const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a>=0&&b>a)attempts.push(t.slice(a,b+1));}\nconst joined=texts.join('\\n').trim();const ja=joined.indexOf('{'),jb=joined.lastIndexOf('}');if(ja>=0&&jb>ja)attempts.push(joined.slice(ja,jb+1));\nfunction repair(s){let o='',inside=false,esc=false;for(let i=0;i<s.length;i++){const c=s[i];if(!inside){o+=c;if(c==='\"')inside=true;continue;}if(esc){o+=c;esc=false;continue;}if(c==='\\\\'){o+=c;esc=true;continue;}if(c==='\"'){let j=i+1;while(j<s.length&&/\\s/.test(s[j]))j++;if(j>=s.length||',}]'.includes(s[j])||s[j]===':'){o+=c;inside=false;}else{o+='\\\\\"';}continue;}if(c==='\\n'){o+='\\\\n';continue;}if(c==='\\r'){o+='\\\\r';continue;}if(c==='\\t'){o+='\\\\t';continue;}o+=c;}return o.replace(/,\\s*([}\\]])/g,'$1').replace(/}\\s*{/g,'},{').replace(/]\\s*\"/g,'],\"').replace(/}\\s*\"/g,'},\"');}\nlet parsed=null,lastError='no JSON object';for(const c of attempts){try{parsed=JSON.parse(c);break;}catch(e){lastError=e.message;}try{parsed=JSON.parse(repair(c));break;}catch(e){lastError=e.message;}}\nconst selected=(base.decisions||[]).filter(d=>d.selected!==false);\nconst dossiers=new Map((base.dossiers||[]).map(d=>[String(d.canonical_key||''),d]));\nconst slugify=s=>String(s||'story').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,80);\nfunction fallbackStory(decision,index){const key=String(decision.canonical_key||'unknown-'+index);const d=dossiers.get(key)||{};const candidate=decision.candidate||{};const headline=decision.headline||decision.development_signal||candidate.development_signal||candidate.title||key;const refs=(d.source_refs||candidate.sources||[]).filter(x=>/^https?:\\/\\//.test(String(x.url||''))).slice(0,6);const findings=(d.findings||[]).map(String).filter(Boolean).slice(0,5);const context=[d.historical_context,d.institutional_context,d.implications].map(String).filter(Boolean);const paragraphs=[...findings,...context].filter(Boolean);return {canonical_key:key,classification:decision.classification||decision.slot|| (index<3?'TOP_STORY':'ALSO_IMPORTANT'),position:index+1,slug:slugify(headline),headline,teaser:decision.rationale||findings[0]||'Verified reporting in progress.',summary:findings.slice(0,2).join(' '),body_markdown:paragraphs.join('\\n\\n'),countries:decision.countries||candidate.countries||[],topics:decision.topics||[],citations:refs.map(r=>({url:r.url,publisher:r.publisher||r.title||'Source',supports:r.supports||[]})),related_content:[],verification_state:'draft',confidence:d.confidence||'low',author_role:(decision.specialist_route==='security'?'Security Analyst':decision.specialist_route==='political'?'Political Analyst':decision.specialist_route==='economic'?'Economic Analyst':'General Analyst'),reading_time_minutes:Math.max(1,Math.ceil(paragraphs.join(' ').split(/\\s+/).filter(Boolean).length/220)),published_at:new Date().toISOString(),website_section:'News',newsletter_product:'The Sahel Brief',newsletter_cta:'Read the full verified story on The Global Analyst.',ai_disclosure:\"Produced by The Global Analyst's AI-powered newsroom and reviewed through its verification workflow.\",draft_recovery:true};}\nconst selectedKeys=new Set(selected.map(d=>String(d.canonical_key||'')));\nconst accepted=[];const seen=new Set();const rejected=[];\nfor(const s of (Array.isArray(parsed?.stories)?parsed.stories:[])){const key=String(s?.canonical_key||'');if(!selectedKeys.has(key)||seen.has(key)){rejected.push({key,headline:s?.headline||'',reason:!selectedKeys.has(key)?'uncommissioned':'duplicate_development'});continue;}seen.add(key);accepted.push(s);}\nfor(let i=0;i<selected.length;i++){const key=String(selected[i].canonical_key||'');if(!seen.has(key)){accepted.push(fallbackStory(selected[i],i));seen.add(key);}}\nconst edition=parsed?.edition&&typeof parsed.edition==='object'?parsed.edition:{title:'The Sahel Brief — '+(base.edition_date||new Date().toISOString().slice(0,10)),dek:accepted.slice(0,3).map(s=>s.headline).join('; '),slate_shortfall:true};\nreturn [{json:{...base,draft:{stories:accepted,edition},draft_validation:{selected_count:selectedKeys.size,accepted_count:accepted.length,recovered_count:accepted.filter(s=>s.draft_recovery).length,rejected,parse_error:parsed?null:lastError},api_usage:{...(base.api_usage||{}),draft:api.usage||{}}}}];"
+      },
+      "id": "fbe00fc2-7f46-4201-840a-2adba791833f",
+      "name": "Parse Draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2752,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$input.first().json;\nconst sourceDossiers=x.dossiers||x.research?.dossiers||[];\nconst dossiers=Object.fromEntries(sourceDossiers.map(d=>[d.canonical_key,d]));\nconst jobs=(x.draft?.stories||[]).map((story,batch_index)=>({batch_index,story,dossier:dossiers[story.canonical_key]||null}));\nreturn [{json:{edition_date:x.edition_date,jobs,draft:x.draft,decisions:x.decisions,dossiers:sourceDossiers,api_usage:x.api_usage||{}}}];"
+      },
+      "id": "c004d41e-8f7a-4f9d-985d-ab2fa8005dcf",
+      "name": "Verification Brief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\"model\":\"claude-sonnet-5\",\"max_tokens\":10000,\"thinking\":{\"type\":\"disabled\"},\"tools\":[{\"type\":\"web_search_20260318\",\"name\":\"web_search\",\"max_uses\":5,\"allowed_callers\":[\"direct\"]}],\"messages\":[{\"role\":\"user\",\"content\":\"Independently verify ONE Sahel story using live web search, separate from writing. Check every material name, role, date, place, number, quotation, attribution and source-to-claim match. Check independence, translation, staleness, false merging and overstatement. Prefer primary evidence for official acts and independent evidence for disputed events. Correct the full story where possible; mark FAILED only when responsible publication is impossible. Never invent evidence. Keep findings concise. The corrected body_markdown must be reader-facing article copy: remove review notes, dossier references, verification-process commentary, parenthetical editorial notes, and unsupported declarations of independent corroboration when outlets repeat the same official account. Preserve useful uncertainty by attributing it naturally in the article. Return only one valid JSON object with top-level keys story and verification. Story is the corrected full story preserving all website fields and citations. Verification contains canonical_key, verifier_route set to independent, status as PASSED or CORRECTED or FAILED, findings, corrections, citation_coverage from 0 to 1, and factual_risk as low, medium or high. INPUT: \"+JSON.stringify($json)}]}) }}",
+        "options": {}
+      },
+      "id": "aa2e002a-9f84-452b-8ce5-37761e2c8fdf",
+      "name": "Independent Verification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        3408,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "anthropicApi": {
+          "id": "KB9IiSEFUTVD7Lcw",
+          "name": "Anthropic DEV ACCOUNT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const api=$input.item.json;\nconst src=$('Split Verification Items').item.json;\nconst texts=(api.content||[]).filter(x=>x.type==='text').map(x=>String(x.text||'').trim()).filter(Boolean);\nconst attempts=[];for(let i=texts.length-1;i>=0;i--){const t=texts[i];attempts.push(t);const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a>=0&&b>a)attempts.push(t.slice(a,b+1));}\nconst joined=texts.join('\\n').trim();const ja=joined.indexOf('{'),jb=joined.lastIndexOf('}');if(ja>=0&&jb>ja)attempts.push(joined.slice(ja,jb+1));\nfunction repair(s){let o='',inside=false,esc=false;for(let i=0;i<s.length;i++){const c=s[i];if(!inside){o+=c;if(c==='\"')inside=true;continue;}if(esc){o+=c;esc=false;continue;}if(c==='\\\\'){o+=c;esc=true;continue;}if(c==='\"'){let j=i+1;while(j<s.length&&/\\s/.test(s[j]))j++;if(j>=s.length||',}]'.includes(s[j])||s[j]===':'){o+=c;inside=false;}else{o+='\\\\\"';}continue;}if(c==='\\n'){o+='\\\\n';continue;}if(c==='\\r'){o+='\\\\r';continue;}if(c==='\\t'){o+='\\\\t';continue;}o+=c;}return o.replace(/,\\s*([}\\]])/g,'$1').replace(/}\\s*{/g,'},{').replace(/]\\s*\"/g,'],\"').replace(/}\\s*\"/g,'},\"');}\nlet parsed=null,lastError='no JSON object';for(const c of attempts){try{parsed=JSON.parse(c);break;}catch(e){lastError=e.message;}try{parsed=JSON.parse(repair(c));break;}catch(e){lastError=e.message;}}\nconst key=(src.story&&src.story.canonical_key)||'unknown';\nconst parseReason=api.stop_reason==='max_tokens'?'Verifier response truncated at max_tokens; '+lastError:'Verification response could not be parsed: '+lastError;\nconst fallback={canonical_key:key,verifier_route:'independent',status:'FAILED',findings:[parseReason],corrections:[],citation_coverage:0,factual_risk:'high'};\nconst verification=parsed&&parsed.verification?parsed.verification:fallback;\nconst corrected=parsed&&parsed.story?parsed.story:{};\nconst status=String(verification.status||'FAILED').toUpperCase();\nconst stateByStatus={PASSED:'verified',PASS:'verified',CORRECTED:'verified_corrected',PASS_WITH_CORRECTIONS:'verified_corrected',FAILED:'failed'};\nconst verifiedState=stateByStatus[status]||'failed';\nconst originalCitations=Array.isArray(src.story?.citations)?src.story.citations:[];\nconst correctedCitations=Array.isArray(corrected.citations)&&corrected.citations.length?corrected.citations:originalCitations;\nconst story={...(src.story||{}),...corrected,canonical_key:key,citations:correctedCitations,verification_state:verifiedState};\nreturn {json:{...src,story,verification:{...verification,status},usage:api.usage||{},verification_parse_error:parsed?null:parseReason,recovery_action:parsed?'parsed':'isolated_as_failed'}};"
+      },
+      "id": "e5942635-69f5-487c-8ecb-1987b913b439",
+      "name": "Parse Verification Item",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3632,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$input.first().json;\nreturn [{json:{edition_date:x.edition_date,stories:x.verification.stories||[],verifications:x.verification.verifications||[],verification_summary:x.verification.verification_summary||{}}}];"
+      },
+      "id": "414f681a-f820-4411-b7f8-00bb3e52f55e",
+      "name": "Final Brief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4064,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\"model\":\"claude-sonnet-5\",\"max_tokens\":14000,\"thinking\":{\"type\":\"disabled\"},\"messages\":[{\"role\":\"user\",\"content\":\"Produce the final shadow-mode Sahel Brief from these independently verified story records. Do not add facts or new URLs. Preserve each selected classification and canonical key; full article bodies are stored separately and MUST NOT appear in newsletter_markdown. The email should be a concise editorial digest: each Top Story gets a specific headline, a 115-150 word summary and 1-3 direct source links from its verified citations; each Also Important news item gets a 45-90 word brief and at least one direct source link. Include every surviving verified story in the newsletter and exclude every failed story. Total newsletter prose under 1,300 words. Carry every material dispute into the same item's headline or summary. When a death toll or perpetrator attribution rests on a government account without independent corroboration, attribute it in the headline and first sentence (for example, 'Ministry says...'); do not state the number as established fact. If sources differ on the identity of personnel, deadlines or figures, name the competing accounts and avoid silently choosing one. Wire republication is not independent corroboration. Keep analysis proportionate to the evidence and distinguish an announced policy from implementation. For each Top Story, explain the mechanism linking the new fact to its consequence, identify the strongest counterevidence or uncertainty, and state the concrete decision or development still pending. Use the verified record to add analytical depth without speculation; cut repetitive caveats. Treat single-source high-consequence claims as allegations in the headline and first sentence, never as confirmed events; explain what independent evidence is absent. Do not repeat a previously published theme without a meaningful new development. Maintain geographic and thematic breadth. Review the full verified article bodies as well as the email. Do a rigorous final line edit for precise dates, entities, citations and economy. The newsletter must read as an original daily edition with a clear lead and distinct, non-overlapping stories. If quality is below four on any dimension, repair the affected copy where evidence allows, record any remaining weakness honestly, and do not treat the numeric score alone as an edition-wide kill switch. If any selected website article contains an internal review note, process language, or claims independent corroboration from outlets repeating one primary account, exclude it from website_json. Do not mark such prose publication-ready. Write clean, specific, economical English, no generic introduction, no formulaic why-it-matters, no filler, no invented quotes. Newsletter is email-only. Return a compact website_json manifest containing every surviving verified article, and no failed article using only canonical_key, slug, headline, teaser, author_role, reading_time_minutes, published_at, website_section, newsletter_cta and ai_disclosure; no article bodies. social_json should be brief. Include explicit AI disclosure and role-only author identity. Return exactly one syntactically valid JSON object without code fences. It has an edition object containing title, dek, newsletter_markdown, website_json and social_json, plus a quality_evaluation object containing numeric 0-5 accuracy, clarity, economy, structure, specificity, contextual_depth, analytical_value, anti_slop and weakest_points. Do not return stories, research or input again. Escape all string contents as JSON. Verify syntax before responding. INPUT: \"+JSON.stringify($json)}]}) }}",
+        "options": {}
+      },
+      "id": "6c9a1b8c-75fc-4d92-8657-99e192308ccc",
+      "name": "Final Editor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        4288,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "anthropicApi": {
+          "id": "KB9IiSEFUTVD7Lcw",
+          "name": "Anthropic DEV ACCOUNT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const root=$('Merge Research Dossiers').first().json;\nconst base=$('Merge Verification').first().json;\nconst api=$input.first().json;\nconst texts=(api.content||[]).filter(x=>x.type==='text').map(x=>String(x.text||'').trim()).filter(Boolean);\nconst attempts=[];for(let i=texts.length-1;i>=0;i--){const t=texts[i];attempts.push(t);const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a>=0&&b>a)attempts.push(t.slice(a,b+1));}\nconst joined=texts.join('\\n').trim();const ja=joined.indexOf('{'),jb=joined.lastIndexOf('}');if(ja>=0&&jb>ja)attempts.push(joined.slice(ja,jb+1));\nfunction repair(s){let o='',inside=false,esc=false;for(let i=0;i<s.length;i++){const c=s[i];if(!inside){o+=c;if(c==='\"')inside=true;continue;}if(esc){o+=c;esc=false;continue;}if(c==='\\\\'){o+=c;esc=true;continue;}if(c==='\"'){let j=i+1;while(j<s.length&&/\\s/.test(s[j]))j++;if(j>=s.length||',}]'.includes(s[j])||s[j]===':'){o+=c;inside=false;}else{o+='\\\\\"';}continue;}if(c==='\\n'){o+='\\\\n';continue;}if(c==='\\r'){o+='\\\\r';continue;}if(c==='\\t'){o+='\\\\t';continue;}o+=c;}return o.replace(/,\\s*([}\\]])/g,'$1').replace(/}\\s*{/g,'},{').replace(/]\\s*\"/g,'],\"').replace(/}\\s*\"/g,'},\"');}\nlet final=null,lastError='no JSON object found';for(const c of attempts){try{final=JSON.parse(c);break;}catch(e){lastError=e.message;}try{final=JSON.parse(repair(c));break;}catch(e){lastError=e.message;}}\nif(final?.edition?.quality_evaluation&&!final.quality_evaluation){final.quality_evaluation=final.edition.quality_evaluation;delete final.edition.quality_evaluation;}\nconst finalEditorIssue=api.stop_reason==='max_tokens'||!final||!final.edition;\nif(!final)final={edition:{},quality_evaluation:{accuracy:4,clarity:4,economy:4,structure:4,specificity:4,contextual_depth:4,analytical_value:4,anti_slop:4,weakest_points:['Final editor response invalid; deterministic publication-safe fallback used']}};\nif(!final.quality_evaluation)final.quality_evaluation={accuracy:4,clarity:4,economy:4,structure:4,specificity:4,contextual_depth:4,analytical_value:4,anti_slop:4,weakest_points:['Final editor omitted quality evaluation']};\nif(typeof final.quality_evaluation.weakest_points==='string')final.quality_evaluation.weakest_points=[final.quality_evaluation.weakest_points];\nconst verifications=base.verification?.verifications||[];const statusByKey=new Map(verifications.map(v=>[String(v.canonical_key||''),String(v.status||'FAILED').toUpperCase()]));\nconst stateByStatus={PASSED:'verified',PASS:'verified',CORRECTED:'verified_corrected',PASS_WITH_CORRECTIONS:'verified_corrected',FAILED:'failed'};\nconst sourceStories=(base.verification?.stories||[]).map(s=>({...s,verification_state:stateByStatus[statusByKey.get(String(s.canonical_key||''))]||'failed'}));\nconst leak=/\\b(this review|original story dossier|could not independently locate|unverified pending|should be treated as unverified|not found in the retrieved|verification_state)\\b|\\(note:\\s/i;\nconst articleDefects=[];const keys=new Set();\nfor(const s of sourceStories){const key=String(s.canonical_key||'');if(!key||keys.has(key))articleDefects.push({canonical_key:key,reason:'missing_or_duplicate_key'});keys.add(key);if(['verified','verified_corrected'].includes(s.verification_state)){if(!String(s.body_markdown||'').trim()||leak.test(String(s.body_markdown||'')))articleDefects.push({canonical_key:key,reason:'article_prose_or_missing_body'});const valid=(s.citations||[]).filter(c=>/^https?:\\/\\//.test(String(c.url||'')));if(valid.length<2)articleDefects.push({canonical_key:key,reason:'citation_gate_min_2'});}}\nconst defectiveKeys=new Set(articleDefects.map(x=>x.canonical_key));\nconst publishable=sourceStories.filter(s=>['verified','verified_corrected'].includes(s.verification_state)&&!defectiveKeys.has(String(s.canonical_key||'')));\nconst excluded=sourceStories.filter(s=>!publishable.some(p=>p.canonical_key===s.canonical_key)).map(s=>({canonical_key:s.canonical_key,verification_state:s.verification_state,reasons:articleDefects.filter(x=>x.canonical_key===s.canonical_key).map(x=>x.reason)}));\nconst priorManifest=Array.isArray(final.edition.website_json)?final.edition.website_json:(final.edition.website_json?.articles||[]);const priorByKey=new Map(priorManifest.map(a=>[a.canonical_key,a]));\nconst manifest=publishable.map(s=>{const a=priorByKey.get(s.canonical_key)||{};return {canonical_key:s.canonical_key,slug:a.slug||s.slug,headline:a.headline||s.headline,teaser:a.teaser||s.teaser||s.summary,author_role:a.author_role||s.author_role,reading_time_minutes:Number(a.reading_time_minutes||s.reading_time_minutes||1),published_at:a.published_at||s.published_at||new Date().toISOString(),website_section:a.website_section||s.website_section||'News',newsletter_cta:a.newsletter_cta||s.newsletter_cta||'Read the full story on The Global Analyst.',ai_disclosure:a.ai_disclosure||s.ai_disclosure||\"Produced by The Global Analyst's AI-powered newsroom and reviewed through its verification workflow.\",verification_state:s.verification_state,publication_approved:true};});\nconst title=final.edition.title||'The Sahel Brief — '+(root.edition_date||new Date().toISOString().slice(0,10));const dek=final.edition.dek||publishable.slice(0,3).map(s=>s.headline).join('; ');\nconst newsletter=publishable.map(s=>{const refs=(s.citations||[]).filter(c=>/^https?:\\/\\//.test(String(c.url||''))).slice(0,3).map(c=>'['+(c.publisher||'Source')+']('+c.url+')').join(' · ');return '## '+s.headline+'\\n\\n'+(s.summary||s.teaser||'')+'\\n\\nSources: '+refs;}).join('\\n\\n');\nconst edition={...final.edition,title,dek,newsletter_markdown:newsletter,website_json:manifest,social_json:final.edition.social_json||{}};\nconst usage={...(root.api_usage||{}),...(base.api_usage||{}),final:api.usage||{}};const stages=[['selection','editorial_selection'],['research','research'],['draft','writing_editing'],['verification','verification'],['final','writing_editing']];const costs=stages.map(([key,subsystem])=>{const u=usage[key]||{};const input=Number(u.input_tokens||0),output=Number(u.output_tokens||0),searches=Number((u.server_tool_use||{}).web_search_requests||0);return {subsystem,service:'anthropic',model:'claude-sonnet-5',calls:Number(u.calls||1),input_tokens:input,output_tokens:output,search_units:searches,estimated_eur:Number((((input*2)+(output*10))/1000000+searches*0.01).toFixed(4)),pricing_note:'Conservative EUR≈USD'};});const total=Number(costs.reduce((s,c)=>s+c.estimated_eur,0).toFixed(4));\nconst q=final.quality_evaluation;const dims=['accuracy','clarity','economy','structure','specificity','contextual_depth','analytical_value','anti_slop'];const avg=dims.reduce((a,k)=>a+Number(q[k]||0),0)/dims.length;\nconst summary={...(base.verification?.verification_summary||{}),publishable_items:publishable.length,excluded_items:excluded.length,excluded_stories:excluded,final_editor_status:publishable.length?'ok':'no_publishable_stories',final_editor_recovery_used:finalEditorIssue,publication_hygiene_issues:articleDefects};\nreturn [{json:{run_type:root.run_type,config_profile:root.config_profile,edition_date:root.edition_date,input_window_start:root.input_window_start,input_window_end:root.input_window_end,started_at:root.started_at,n8n_execution_id:$execution.id,model_config:root.model_config,notes:publishable.length?'V1.2 resilient edition; failed/defective stories isolated from publication':'V1.2 audit-only run; no responsible publishable story survived',publication_contract:{website_status:'publication_gated',newsletter_product:'The Sahel Brief',newsletter_distribution:'same_canonical_survivors_only',website_story_types:['News','Analysis','Background'],author_identity:'role_only',ai_disclosure_required:true,quality_policy:'repair_then_exclude; score_is_diagnostic'},discovery_summary:root.discovery_summary,candidates:root.candidates||[],decisions:root.selection?.decisions||base.decisions||[],selection_summary:root.selection?.slate_summary||{},dossiers:root.research?.dossiers||base.dossiers||[],stories:sourceStories,verifications,verification_summary:summary,edition,costs,cost_summary:{total_estimated_eur:total,hard_daily_ceiling_eur:10,within_ceiling:total<=10},evaluations:[{stage:'writing',target_type:'edition',evaluator:'final_editor_v1',rubric:q,score:Number(avg.toFixed(2)),passed:publishable.length>0,advisory:avg<4?'repair_recommended_not_blocking':'quality_target_met',findings:q.weakest_points||[]},{stage:'verification',target_type:'edition',evaluator:'independent_verifier_v1',rubric:summary,score:null,passed:publishable.length>0,findings:[...(summary.main_residual_risks||[]),...excluded.map(x=>x.canonical_key+': excluded from publication')]}],recovery:{upstream_reusable:true,narrow_retry_from:['verification','final_edit','persistence','website','distribution'],failed_story_policy:'retain_audit_exclude_publication'}}}];"
+      },
+      "id": "e30bf37d-a7b3-4124-be2c-7f666aab4d24",
+      "name": "Canonical Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4512,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://yugoifzlhfubxefawqqs.supabase.co/rest/v1/rpc/tga_v1_persist_payload",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_payload: Object.assign({}, $json, { candidates: ($json.candidates || []).map(c => Object.assign({}, c, { score_raw: c.score, score: Math.min(9.9999, Math.max(-9.9999, Number(c.score || 0))) })) }) }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "12e95867-bde0-49f4-a498-ebde03ec8daf",
+      "name": "Persist TGA V1 Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        4720,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "2Z0VISc47EpSdSuW",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$input.first().json;\nreturn (x.commissions||[]).map((commission,batch_index)=>({json:{edition_date:x.edition_date,batch_index,commission}}));"
+      },
+      "id": "cc65e41d-44af-4bb5-8a0c-26ea6363a458",
+      "name": "Split Research Commissions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json).sort((a,b)=>a.batch_index-b.batch_index);\nconst base=$('Parse Selection').first().json;\nconst sum=(path)=>rows.reduce((s,r)=>s+Number(path(r.usage||{})||0),0);\nconst usage={calls:rows.length,input_tokens:sum(u=>u.input_tokens),output_tokens:sum(u=>u.output_tokens),server_tool_use:{web_search_requests:sum(u=>(u.server_tool_use||{}).web_search_requests)}};\nreturn [{json:{...base,research:{dossiers:rows.map(r=>r.dossier)},api_usage:{...(base.api_usage||{}),research:usage}}}];"
+      },
+      "id": "96d02613-6298-452a-96d0-71a415f48908",
+      "name": "Merge Research Dossiers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$input.first().json;\nreturn (x.jobs||[]).map(job=>({json:{edition_date:x.edition_date,...job}}));"
+      },
+      "id": "f0509dbb-2cee-4d17-8326-b41c7ed68b58",
+      "name": "Split Verification Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3184,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json).sort((a,b)=>a.batch_index-b.batch_index);\nconst base=$('Parse Draft').first().json;\nconst sum=(path)=>rows.reduce((s,r)=>s+Number(path(r.usage||{})||0),0);\nconst usage={calls:rows.length,input_tokens:sum(u=>u.input_tokens),output_tokens:sum(u=>u.output_tokens),server_tool_use:{web_search_requests:sum(u=>(u.server_tool_use||{}).web_search_requests)}};\nconst verifications=rows.map(r=>({...r.verification,canonical_key:r.verification?.canonical_key||r.story?.canonical_key}));\nconst count=status=>verifications.filter(v=>String(v.status||'').toUpperCase()===status).length;\nconst residual=verifications.filter(v=>v.factual_risk==='high'||String(v.status).toUpperCase()==='FAILED').map(v=>v.canonical_key+': '+(v.findings||[]).join('; '));\nconst verification_summary={items_checked:verifications.length,items_passed:count('PASSED'),items_corrected:count('CORRECTED'),items_failed:count('FAILED'),main_residual_risks:residual};\nreturn [{json:{...base,verification:{stories:rows.map(r=>r.story),verifications,verification_summary},api_usage:{...(base.api_usage||{}),verification:usage}}}];"
+      },
+      "id": "4a21064d-5a44-4684-8165-2a824fec9039",
+      "name": "Merge Verification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3840,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://yugoifzlhfubxefawqqs.supabase.co/rest/v1/rpc/tga_v1_recent_story_memory",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"p_days\":14}",
+        "options": {}
+      },
+      "id": "b36e3f70-2d8c-4c31-99e6-a0b5bd103840",
+      "name": "Recent DEV Story Memory",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        240,
+        0
+      ],
+      "settings": {
+        "executeOnce": true
+      },
+      "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "2Z0VISc47EpSdSuW",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://yugoifzlhfubxefawqqs.supabase.co/rest/v1/rpc/tga_v1_stage_edition_articles",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_run_id: $json.data }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "2f9c64de-c340-4cfd-8ad4-c9cf35b10fcf",
+      "name": "Stage Website Articles — DEV Shadow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        4720,
+        448
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "2Z0VISc47EpSdSuW",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://yugoifzlhfubxefawqqs.supabase.co/rest/v1/rpc/tga_v1_distribution_payload",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_run_id: $('Persist TGA V1 Run').first().json.data }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "70679b12-6f16-423d-8c37-c833d928cebd",
+      "name": "Prepare Canonical Distribution Payload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        4864,
+        592
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "2Z0VISc47EpSdSuW",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7,
+              "triggerAtMinute": 25
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -656,
+        416
+      ],
+      "id": "5b15025e-9744-4b19-991e-c8539b8a2a78",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "function decode(value){let current=value;for(let i=0;i<5;i++){if(typeof current==='string'){const t=current.trim();if(!t)return{};try{current=JSON.parse(t);continue;}catch{return{text:current};}}if(current&&typeof current==='object'&&Object.keys(current).length===1&&'data'in current){current=current.data;continue;}break;}return current||{};}\nconst arr=v=>Array.isArray(v)?v:[];\nconst esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');\nconst firstArray=(...xs)=>xs.find(x=>Array.isArray(x)&&x.length)||[];\nconst input=decode($input.first().json);\nlet canonical={};try{canonical=decode($('Canonical Payload').first().json);}catch{}\nlet staged={};try{staged=decode($('Stage Website Articles — DEV Shadow').first().json);}catch{}\nconst edition=decode(input.edition||input.canonical_edition||input.distribution||canonical.edition||canonical.canonical_edition||canonical);\nconst articles=firstArray(input.articles,input.website_articles,input.website_json?.articles,edition.articles,edition.website_articles,edition.website_json?.articles,canonical.articles,canonical.website_articles,canonical.website_json?.articles,staged.articles,staged.website_articles);\nconst isLive=articles.some(a=>['published','live'].includes(String(a?.publication_status||a?.status||'').toLowerCase()));\nconst defects=[];const approved=[];const excluded=[];const seen=new Set();\nfor(const a of articles){const key=String(a?.canonical_key||a?.id||'').trim();const state=String(a?.verification_state||a?.verification?.status||'').toLowerCase();const status=String(a?.publication_status||a?.status||'shadow_ready').toLowerCase();const slug=String(a?.slug||'').trim();const url=String(a?.url||a?.public_url||(slug?'https://www.theglobalanalyst.com/articles/'+slug:''));const citations=firstArray(a?.citations,a?.sources,a?.source_links);const reasons=[];if(!key||seen.has(key))reasons.push('missing_or_duplicate_canonical_key');if(key)seen.add(key);if(!['verified','verified_corrected','corrected','passed'].includes(state))reasons.push('not_verified');if(!a?.headline||!a?.teaser||!(a?.body||a?.body_markdown||a?.article_body||a?.content))reasons.push('missing_editorial_content');if(!a?.author_role||!Number(a?.reading_time_minutes)||!a?.ai_disclosure)reasons.push('missing_public_metadata');if(citations.filter(c=>String(c?.url||c||'').startsWith('http')).length<2)reasons.push('fewer_than_2_citations');if(!slug||!url.startsWith('https://www.theglobalanalyst.com/articles/'))reasons.push('invalid_url');if(isLive&&(a?.publication_approved!==true||!['published','live'].includes(status)))reasons.push('not_live_or_approved');const normalized={...a,canonical_key:key,slug,url,verification_state:state,publication_status:status};if(reasons.length){excluded.push(normalized);defects.push({canonical_key:key||null,headline:a?.headline||null,reasons});}else approved.push(normalized);}\nconst editionDate=String(edition.edition_date||canonical.edition_date||new Date().toISOString().slice(0,10));\nconst subject=String(edition.newsletter_subject||edition.subject||'The Sahel Brief — '+editionDate);\nconst newsletterItems=approved.map(a=>({canonical_key:a.canonical_key,headline:a.headline,teaser:a.teaser,url:a.url,author_role:a.author_role,reading_time_minutes:Number(a.reading_time_minutes)||1}));\nconst leads=newsletterItems.slice(0,Math.min(4,newsletterItems.length));\nconst briefs=newsletterItems.slice(leads.length);\nconst dek=leads.length?'Today: '+leads.slice(0,3).map(a=>a.headline.replace(/[.]+$/,'')).join('; ')+(newsletterItems.length>3?'; and more from across the Sahel.':'.'):'No responsible edition is ready.';\nconst leadHtml=leads.map(a=>'<article><h2 style=\"color:#111111\"><a style=\"color:#111111;text-decoration:none\" href=\"'+esc(a.url)+'\">'+esc(a.headline)+'</a></h2><p>'+esc(a.teaser)+'</p><p><strong>'+esc(a.author_role)+'</strong> · '+a.reading_time_minutes+' min read · <a href=\"'+esc(a.url)+'\">Read the full article →</a></p></article>').join('<hr>');\nconst briefHtml=briefs.length?'<hr><h2>Also in the Sahel</h2>'+briefs.map(a=>'<article><h3 style=\"color:#111111\"><a style=\"color:#111111;text-decoration:none\" href=\"'+esc(a.url)+'\">'+esc(a.headline)+'</a></h3><p>'+esc(a.teaser)+' <a href=\"'+esc(a.url)+'\">Read more →</a></p></article>').join(''):'';\nconst newsletterHtml='<h1 style=\"color:#111111\">'+esc(subject)+'</h1><p><strong>'+esc(dek)+'</strong></p><p>The Global Analyst’s verified daily briefing on Mali, Niger, Burkina Faso, Mauritania, Chad and the wider Sahel.</p><hr><h2>Top stories</h2>'+leadHtml+briefHtml+'<hr><p><em>AI-powered news and analysis, produced with human editorial oversight. Full articles, sourcing and citations are available at TheGlobalAnalyst.com.</em></p>';\nconst newsletterText=subject+'\\n\\n'+dek+'\\n\\nTOP STORIES\\n\\n'+leads.map(a=>a.headline+'\\n'+a.teaser+'\\n'+a.url).join('\\n\\n')+(briefs.length?'\\n\\nALSO IN THE SAHEL\\n\\n'+briefs.map(a=>a.headline+'\\n'+a.teaser+'\\n'+a.url).join('\\n\\n'):'')+'\\n\\nAI-powered news and analysis, produced with human editorial oversight.';\nconst minimumResponsible=approved.length>=1;\nreturn [{json:{run_id:input.run_id||edition.run_id||canonical.run_id||null,edition_id:input.edition_id||edition.edition_id||canonical.edition_id||null,edition_date:editionDate,mode:isLive?'live':'shadow',gate_passed:minimumResponsible&&(isLive?defects.length===0:true),publication_ready:isLive&&minimumResponsible&&defects.length===0,shadow_ready:!isLive&&minimumResponsible,article_count:approved.length,excluded_count:excluded.length,website_manifest:approved,newsletter_manifest:newsletterItems,newsletter_subject:subject,newsletter_html:newsletterHtml,newsletter_text:newsletterText,social_manifest:approved.map(a=>({canonical_key:a.canonical_key,text:a.headline+' — '+a.teaser,url:a.url})),defects,excluded_articles:excluded,audit:{website_keys:approved.map(a=>a.canonical_key),newsletter_keys:newsletterItems.map(a=>a.canonical_key),exact_manifest_match:approved.map(a=>a.canonical_key).join('|')===newsletterItems.map(a=>a.canonical_key).join('|'),checked_at:new Date().toISOString()}}}];"
+      },
+      "id": "1b22d8d8-4aff-46e0-9a94-2f506ebc4fd4",
+      "name": "Publication Readiness Gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5088,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.buttondown.com/v1/emails",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Token __REDACTED_MOVE_TO_MANAGED_N8N_CREDENTIAL__"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Buttondown-Live-Dangerously",
+              "value": "true"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "subject",
+              "value": "={{ $('Publication Readiness Gate').first().json.newsletter_subject }}"
+            },
+            {
+              "name": "body",
+              "value": "={{ $('Publication Readiness Gate').first().json.newsletter_html }}"
+            },
+            {
+              "name": "status",
+              "value": "={{ $json.publication_ready && $json.article_count > 0 && $json.audit && $json.audit.exact_manifest_match ? 'about_to_send' : 'draft' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        6368,
+        1904
+      ],
+      "id": "7453a80f-553e-4772-bd91-a3051985161c",
+      "name": "Publish Newsletter — Buttondown"
+    },
+    {
+      "parameters": {
+        "jsCode": "const gate=$input.first().json;\nif(gate.publication_ready!==true || gate.audit?.exact_manifest_match!==true || !gate.edition_id || !gate.edition_date) return [];\nconst stories=Array.isArray(gate.social_manifest)?gate.social_manifest:[];\nconst live=stories.filter(a=>a.canonical_key && /^https://www\\.theglobalanalyst\\.com/articles/[a-z0-9-]+$/.test(a.url||''));\nif(!live.length || live.length!==gate.article_count) return [];\nconst lead=live[0];\nconst article=gate.website_manifest.find(a=>a.canonical_key===lead.canonical_key);\nif(!article || article.url!==lead.url || !['published','live'].includes(article.publication_status) || article.publication_approved!==true) return [];\nconst shorten=(s,n)=>Array.from(String(s||'').trim()).slice(0,n).join('').trim();\nconst headline=shorten(article.headline,160), teaser=shorten(article.teaser,250);\nconst x=shorten(headline+' — '+shorten(teaser,Math.max(0,246-headline.length-lead.url.length)),255-lead.url.length)+'\\n'+lead.url;\nconst linkedin=headline+'\\n\\n'+teaser+'\\n\\nRead the verified analysis: '+lead.url;\nconst hash=s=>{let h=14695981039346656037n;for(const c of s){h^=BigInt(c.codePointAt(0));h=(h*1099511628211n)&((1n<<64n)-1n);}return h.toString(16).padStart(16,'0');};\nreturn [\n  {json:{edition_date:gate.edition_date,edition_id:gate.edition_id,destination:'buffer_x',channel_id:'6abc1a79ea19ca0bde280931',canonical_keys:[lead.canonical_key],text:x,payload_hash:hash(x)}},\n  {json:{edition_date:gate.edition_date,edition_id:gate.edition_id,destination:'buffer_linkedin',channel_id:'6abc13a5ea19ca0bde27b3ac',canonical_keys:[lead.canonical_key],text:linkedin,payload_hash:hash(linkedin)}}\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5856,
+        1072
+      ],
+      "id": "f3477837-0e97-4553-93f9-23e9de5aa3a1",
+      "name": "Plan Buffer Social Dispatch"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://yugoifzlhfubxefawqqs.supabase.co/rest/v1/rpc/tga_v1_claim_distribution",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_edition_date: $json.edition_date, p_edition_id: $json.edition_id, p_destination: $json.destination, p_canonical_keys: $json.canonical_keys, p_payload_hash: $json.payload_hash }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        6080,
+        1072
+      ],
+      "id": "214acb70-ceee-49ef-bb63-f2426470925c",
+      "name": "Claim Buffer Dispatch — DEV",
+      "credentials": {
+        "supabaseApi": {
+          "id": "2Z0VISc47EpSdSuW",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const claims=$input.all();\nconst planned=$('Plan Buffer Social Dispatch').all();\nif(claims.length!==planned.length) throw new Error('Buffer claim count mismatch');\nreturn claims.flatMap((item,i)=>{\n  const claim=item.json;\n  if(claim.claimed!==true) return [];\n  if(!Number.isSafeInteger(Number(claim.dispatch_id))) throw new Error('Missing dispatch ID');\n  return [{json:{...planned[i].json,dispatch_id:claim.dispatch_id}}];\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6304,
+        1072
+      ],
+      "id": "def837a0-f0a1-4c40-943e-e6baab7913d9",
+      "name": "Only Newly Claimed Buffer Posts"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.buffer.com",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ query: 'mutation { createPost(input: { text: '+JSON.stringify($json.text)+', channelId: '+JSON.stringify($json.channel_id)+', schedulingType: automatic, mode: addToQueue }) { __typename ... on PostActionSuccess { post { id status dueAt } } ... on MutationError { message } } }' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        5728,
+        1424
+      ],
+      "id": "662fd3c2-7da8-49ed-9500-0485dc8971e7",
+      "name": "Queue Buffer Post — X or LinkedIn",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "QzOR9TVkjmevnMh6",
+          "name": "Buffer API — The Sahel Brief"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5952,
+        1424
+      ],
+      "id": "abe8e93a-3740-470c-bcbc-a11f30d9620b",
+      "name": "Validate Buffer Post Receipt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://yugoifzlhfubxefawqqs.supabase.co/rest/v1/rpc/tga_v1_complete_distribution",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        6176,
+        1424
+      ],
+      "id": "a10d3bd0-f9ed-4090-b2ce-5ad68aaf3a49",
+      "name": "Record Buffer Dispatch Receipt — DEV",
+      "credentials": {
+        "supabaseApi": {
+          "id": "2Z0VISc47EpSdSuW",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5456,
+        736
+      ],
+      "id": "07e86e27-2e20-4904-8ed0-a126b3cb7e21",
+      "name": "Plan Newsletter Dispatch"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://yugoifzlhfubxefawqqs.supabase.co/rest/v1/rpc/tga_v1_claim_distribution",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        5680,
+        736
+      ],
+      "id": "8a7a6482-451d-4419-b790-7e916cfd9474",
+      "name": "Claim Newsletter Send — DEV",
+      "credentials": {
+        "supabaseApi": {
+          "id": "2Z0VISc47EpSdSuW",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5904,
+        736
+      ],
+      "id": "9207437a-6931-48b9-a5b9-519411656d09",
+      "name": "Only Newly Claimed Newsletter"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6592,
+        1904
+      ],
+      "id": "11b7591c-4a38-40ea-97f0-28f49fd097e8",
+      "name": "Validate Buttondown Send Receipt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://yugoifzlhfubxefawqqs.supabase.co/rest/v1/rpc/tga_v1_complete_distribution",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        6512,
+        2048
+      ],
+      "id": "e7757636-be43-48e3-8d74-72209061776c",
+      "name": "Record Newsletter Dispatch Receipt — DEV",
+      "credentials": {
+        "supabaseApi": {
+          "id": "2Z0VISc47EpSdSuW",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://yugoifzlhfubxefawqqs.supabase.co/rest/v1/rpc/tga_v2_daily_selection_context",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        528,
+        144
+      ],
+      "id": "aa7a9a0b-e342-437e-af5c-d8e939799a41",
+      "name": "Retrieve V2 Editorial Context — DEV",
+      "credentials": {
+        "supabaseApi": {
+          "id": "2Z0VISc47EpSdSuW",
+          "name": "Supabase account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Discovery Queries V1": {
+      "main": [
+        [
+          {
+            "node": "Loop Discovery Feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Discovery Feeds": {
+      "main": [
+        [
+          {
+            "node": "Normalize and Cluster",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Google News RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Google News RSS": {
+      "main": [
+        [
+          {
+            "node": "Loop Discovery Feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize and Cluster": {
+      "main": [
+        [
+          {
+            "node": "Recent DEV Story Memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Editorial Packet": {
+      "main": [
+        [
+          {
+            "node": "Editorial Selection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Editorial Selection": {
+      "main": [
+        [
+          {
+            "node": "Parse Selection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Selection": {
+      "main": [
+        [
+          {
+            "node": "Research Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Brief": {
+      "main": [
+        [
+          {
+            "node": "Split Research Commissions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Specialist Research": {
+      "main": [
+        [
+          {
+            "node": "Parse Research Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft Brief": {
+      "main": [
+        [
+          {
+            "node": "Draft Edition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft Edition": {
+      "main": [
+        [
+          {
+            "node": "Parse Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Draft": {
+      "main": [
+        [
+          {
+            "node": "Verification Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verification Brief": {
+      "main": [
+        [
+          {
+            "node": "Split Verification Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Independent Verification": {
+      "main": [
+        [
+          {
+            "node": "Parse Verification Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final Brief": {
+      "main": [
+        [
+          {
+            "node": "Final Editor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final Editor": {
+      "main": [
+        [
+          {
+            "node": "Canonical Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Canonical Payload": {
+      "main": [
+        []
+      ]
+    },
+    "Split Research Commissions": {
+      "main": [
+        [
+          {
+            "node": "Specialist Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Research Item": {
+      "main": [
+        [
+          {
+            "node": "Merge Research Dossiers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Research Dossiers": {
+      "main": [
+        [
+          {
+            "node": "Draft Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Verification Items": {
+      "main": [
+        [
+          {
+            "node": "Independent Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Verification Item": {
+      "main": [
+        [
+          {
+            "node": "Merge Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Verification": {
+      "main": [
+        [
+          {
+            "node": "Final Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recent DEV Story Memory": {
+      "main": [
+        [
+          {
+            "node": "Retrieve V2 Editorial Context — DEV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist TGA V1 Run": {
+      "main": [
+        [
+          {
+            "node": "Stage Website Articles — DEV Shadow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stage Website Articles — DEV Shadow": {
+      "main": [
+        [
+          {
+            "node": "Prepare Canonical Distribution Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Discovery Queries V1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Canonical Distribution Payload": {
+      "main": [
+        [
+          {
+            "node": "Publication Readiness Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publication Readiness Gate": {
+      "main": [
+        [
+          {
+            "node": "Plan Buffer Social Dispatch",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Plan Newsletter Dispatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan Buffer Social Dispatch": {
+      "main": [
+        [
+          {
+            "node": "Claim Buffer Dispatch — DEV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim Buffer Dispatch — DEV": {
+      "main": [
+        [
+          {
+            "node": "Only Newly Claimed Buffer Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only Newly Claimed Buffer Posts": {
+      "main": [
+        [
+          {
+            "node": "Queue Buffer Post — X or LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue Buffer Post — X or LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Validate Buffer Post Receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Buffer Post Receipt": {
+      "main": [
+        [
+          {
+            "node": "Record Buffer Dispatch Receipt — DEV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan Newsletter Dispatch": {
+      "main": [
+        [
+          {
+            "node": "Claim Newsletter Send — DEV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim Newsletter Send — DEV": {
+      "main": [
+        [
+          {
+            "node": "Only Newly Claimed Newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only Newly Claimed Newsletter": {
+      "main": [
+        [
+          {
+            "node": "Publish Newsletter — Buttondown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish Newsletter — Buttondown": {
+      "main": [
+        [
+          {
+            "node": "Validate Buttondown Send Receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Buttondown Send Receipt": {
+      "main": [
+        [
+          {
+            "node": "Record Newsletter Dispatch Receipt — DEV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve V2 Editorial Context — DEV": {
+      "main": [
+        [
+          {
+            "node": "Editorial Packet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "a61e42a3-987d-402d-a1ed-dc998116be98",
+  "meta": {
+    "instanceId": "c03201b1c77bc4561513367f15e1e2c367eb3bde7cdb7f092ad20142d5125603"
+  },
+  "nodeGroups": [],
+  "id": "lUkaBEszINDekMNR",
+  "tags": []
+}
