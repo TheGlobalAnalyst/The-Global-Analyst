@@ -2,7 +2,8 @@
 
 ## Boundary
 - V1.2 production workflow: `ETEqN6j1vzlIYx7f` remains the published daily engine at 07:25 Europe/Berlin. No V2 publishing edge is connected to it.
-- V2 manual shadow workflow: `vMkvx2gjPqJ5zNNk` is separate and unpublished. It uses the managed `Supabase account 2` credential to idempotently refresh approved published V1 memory in DEV, then read memory, premium context and candidate readiness.
+- V2 baseline workflow: `lUkaBEszINDekMNR` is an unpublished duplicate of the full 41-node V1.2 newsroom, including discovery, selection, specialist research, drafting, verification and canonical output. The copied production persistence/distribution nodes are retained for contract reference but disconnected from `Canonical Payload` in the V2 copy; the copied schedule is inactive. Never manually run a copied send branch. V1.2 remains untouched.
+- V2 memory sidecar: `vMkvx2gjPqJ5zNNk` remains an unpublished diagnostic workflow. It uses the managed `Supabase account 2` credential to idempotently refresh approved published V1 memory in DEV, then read memory, premium context and candidate readiness. These functions are intended to feed the full V1.2-based V2 workflow, not replace its newsroom engine.
 - DEV Supabase project: `yugoifzlhfubxefawqqs`. Production Supabase project is outside this work.
 
 ## Implemented in DEV
@@ -49,6 +50,7 @@ A service-role-only `tga_v2_premium_candidate_readiness(date)` RPC returns a bou
 - No V2 output is authorized to publish. V1.2 schedule, dispatch receipts and first unattended run still need operational observation.
 
 ## Next implementation sequence
+0. Feed bounded V2 memory and rules into the duplicated V1.2-based selection, research and verification stages, preserving the existing canonical output contract. Keep the copied publication edge disconnected until shadow validation.
 1. Observe the first unattended V1.2 run and verify website, Buttondown, X and LinkedIn receipts; observe the next 10:00 V2 ingestion execution.
 2. Add fresh multilingual source discovery and evidence capture, assess source origin/dependencies, then independently verify current claims. Keep imported V1 evidence historical.
 3. Resolve recurring actors and link follow-ups to developments; ingest Publisher feedback and review rule conflicts.
