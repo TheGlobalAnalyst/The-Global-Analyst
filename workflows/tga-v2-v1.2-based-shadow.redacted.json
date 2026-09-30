@@ -665,10 +665,6 @@
         "headerParameters": {
           "parameters": [
             {
-              "name": "Authorization",
-              "value": "Token __REDACTED_MOVE_TO_MANAGED_N8N_CREDENTIAL__"
-            },
-            {
               "name": "Content-Type",
               "value": "application/json"
             },
@@ -1393,7 +1389,7 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "a61e42a3-987d-402d-a1ed-dc998116be98",
+  "versionId": "eb69caef-5a5f-4366-8c11-1bcd2893fb0c",
   "meta": {
     "instanceId": "c03201b1c77bc4561513367f15e1e2c367eb3bde7cdb7f092ad20142d5125603"
   },
