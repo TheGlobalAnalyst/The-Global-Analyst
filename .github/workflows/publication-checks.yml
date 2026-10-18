@@ -14,7 +14,19 @@ jobs:
       - run: node --check lib/publication-source.js
       - run: node --test scripts/python-publications.test.mjs
       - run: node scripts/sync-publication.test.mjs
-      - run: node --test scripts/subscribe.test.mjs
+      - run: node --test scripts/subscribe.test.mjs scripts/subscription-readiness.test.mjs
       - run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
+
+  subscription-live-readiness:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: publication
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    container: node:24-bookworm-slim
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node scripts/subscription-live-readiness.mjs
