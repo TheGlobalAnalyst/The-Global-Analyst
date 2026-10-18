@@ -13,7 +13,7 @@ export default async function ChallengerArticle({params}) {
  const a=data.article;
  return <main className="container"><article className="article" data-content-sha256={data.content_sha256}>
   <div className="kicker">The Sahel Brief · Challenger V0</div>
-  <h1>{a.headline}</h1><p className="standfirst">{a.teaser}</p>
+  <h1>{a.headline}</h1><div className="standfirst"><ReactMarkdown>{a.teaser}</ReactMarkdown></div>
   <p className="articleMeta">Edition: {a.window_end.slice(0,10)} · {a.section==='ongoing'?'Ongoing development':'Reported development'}</p>
   <div className="articleBody"><ReactMarkdown>{a.body_markdown}</ReactMarkdown></div>
   <section className="sources"><h2>Sources</h2><ul>{a.sources.map((s,i)=><li key={i}><a href={s.url} rel="noreferrer" target="_blank">{s.publisher}</a></li>)}</ul></section>
