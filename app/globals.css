@@ -87,3 +87,19 @@ a{color:inherit;text-decoration:none}
   .standfirst{font-size:21px}
   .footerInner{flex-direction:column}
 }
+
+/* First-party newsletter signup */
+.signupForm{margin-top:24px;max-width:560px}
+.signupForm>label{display:block;font-size:14px;font-weight:700;margin-bottom:8px}
+.signupFields{display:flex;gap:10px}
+.signupFields input{min-width:0;flex:1;padding:12px;border:1px solid var(--line);border-radius:2px;font:inherit}
+.signupFields .button{border:0;font:inherit;font-weight:700;cursor:pointer}
+.signupFields input:focus-visible,.signupFields button:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+.signupFields :disabled{opacity:.6;cursor:wait}
+.signupNote{font-size:13px;color:var(--muted)}
+.signupError{font-size:14px;color:#a00000}
+.signupError:empty{display:none}
+.signupSuccess{margin-top:24px;padding:18px;background:var(--soft);border-left:3px solid var(--red)}
+.signupSuccess h3{margin:0 0 8px}
+.signupTrap{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+@media(max-width:540px){.signupFields{flex-direction:column}.signupFields .button{width:100%}}

@@ -1,3 +1,5 @@
+import SubscribeForm from '../../components/SubscribeForm';
+
 export const metadata = {title:'Newsletters'};
 
 export default function Newsletters(){
@@ -13,7 +15,7 @@ export default function Newsletters(){
           <div className="kicker">Daily · Sahel</div>
           <h2>The Sahel Brief</h2>
           <p>A clear daily briefing on Mali, Niger, Burkina Faso, Mauritania, Chad and the wider Sahel. See the developments worth your attention, the context behind them and our strongest reporting.</p>
-          <p><a className="button" href="https://buttondown.com/TheSahelBrief">Subscribe</a></p>
+          <SubscribeForm/>
         </article>
         <article className="newsletterCard" style={{opacity:.48}}>
           <div className="kicker">Coming later</div>

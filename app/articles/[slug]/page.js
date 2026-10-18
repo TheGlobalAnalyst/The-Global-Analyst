@@ -55,7 +55,7 @@ export default async function ArticlePage({params}){
           <div className="kicker">The Sahel Brief</div>
           <h2 style={{fontFamily:"Georgia,serif",fontSize:"30px",margin:"5px 0 8px"}}>Get the daily briefing</h2>
           <p>{story.newsletter_cta || 'Follow the most important developments across the Sahel each morning.'}</p>
-          <a className="button" href="https://buttondown.com/TheSahelBrief">Subscribe</a>
+          <Link className="button" href="/newsletters">Subscribe</Link>
         </section>
 
         {related.length > 0 && (
