@@ -45,3 +45,6 @@ For stories selected for the website:
 3. Newsletter CTA links to the website article.
 4. Social representation points to the same article.
 5. No separate research process is created for newsletter or social.
+
+## Python newsroom publication projection
+The publisher authorized website articles plus owner-only Buttondown draft tests on18October2026. Python output uses a separate public.python_public_articles projection with source_reviewed state and explicit AI/source-review disclosure; it does not relabel those articles as independently verified or change legacy publication policies. Only published, approved rows are anonymously readable; write access is denied to anon/authenticated roles. The frontend preserves its existing design and combines approved legacy stories with these explicitly source-reviewed articles. No subscriber delivery or social publication is enabled.
