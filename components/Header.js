@@ -8,7 +8,7 @@ export default function Header(){
           <img src="/logo.png" alt="The Global Analyst" className="logo"/>
           <div>
             <div className="brandName">The Global Analyst</div>
-            <div className="tagline">See more. Miss less. Understand what matters.</div>
+            <div className="tagline">AI powered News and Analysis</div>
           </div>
         </Link>
       </div>
