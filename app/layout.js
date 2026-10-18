@@ -10,9 +10,12 @@ export const metadata = {
   },
   description: 'Wider monitoring, verified reporting and lasting context on the developments that matter.',
   icons: {
-    icon: [{ url: '/brand-tab-logo.jpg', type: 'image/jpeg' }],
-    shortcut: '/brand-tab-logo.jpg',
-    apple: '/brand-tab-logo.jpg'
+    icon: [
+      { url: '/tga-favicon-v2.ico', sizes: '16x16 32x32 48x48', type: 'image/x-icon' },
+      { url: '/tga-favicon-v2-32.png', sizes: '32x32', type: 'image/png' }
+    ],
+    shortcut: '/tga-favicon-v2.ico',
+    apple: [{ url: '/tga-apple-icon-v2.png', sizes: '180x180', type: 'image/png' }]
   },
   openGraph: {
     title: 'The Global Analyst',
