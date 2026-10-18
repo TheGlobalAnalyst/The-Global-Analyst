@@ -9,6 +9,11 @@ export const metadata = {
     template: '%s | The Global Analyst'
   },
   description: 'Wider monitoring, verified reporting and lasting context on the developments that matter.',
+  icons: {
+    icon: [{ url: '/brand-tab-logo.jpg', type: 'image/jpeg' }],
+    shortcut: '/brand-tab-logo.jpg',
+    apple: '/brand-tab-logo.jpg'
+  },
   openGraph: {
     title: 'The Global Analyst',
     description: 'See more. Miss less. Understand what matters. Verified reporting with wider context.',
