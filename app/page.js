@@ -12,7 +12,7 @@ export default async function Home(){
       {featured && (
         <section className="hero">
           <div className="container">
-            <div className="kicker">Today's original</div>
+            <div className="kicker">Today's lead</div>
             <h1 className="heroTitle"><Link href={`/articles/${featured.slug}`}>{featured.headline}</Link></h1>
             <p className="heroDeck">{featured.teaser}</p>
             <StoryMeta story={featured}/>

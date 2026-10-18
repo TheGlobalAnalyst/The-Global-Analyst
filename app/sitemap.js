@@ -1,5 +1,7 @@
 import { getPublishedArticles } from '../lib/publication-source';
 
+export const dynamic='force-dynamic';
+
 export default async function sitemap(){
   const articles = await getPublishedArticles();
   return [
