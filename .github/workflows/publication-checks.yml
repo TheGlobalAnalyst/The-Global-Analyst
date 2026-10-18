@@ -14,6 +14,7 @@ jobs:
       - run: node --check lib/publication-source.js
       - run: node --test scripts/python-publications.test.mjs
       - run: node scripts/sync-publication.test.mjs
+      - run: node --test scripts/subscribe.test.mjs
       - run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
