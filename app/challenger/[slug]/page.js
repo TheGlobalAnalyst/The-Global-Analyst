@@ -14,7 +14,7 @@ export default async function ChallengerArticle({params}) {
  return <main className="container"><article className="article" data-content-sha256={data.content_sha256}>
   <div className="kicker">The Sahel Brief · Challenger V0</div>
   <h1>{a.headline}</h1><p className="standfirst">{a.teaser}</p>
-  <p className="articleMeta">Development: {a.development_date} · {a.section==='ongoing'?'Ongoing development':'Reported development'}</p>
+  <p className="articleMeta">Edition: {a.window_end.slice(0,10)} · {a.section==='ongoing'?'Ongoing development':'Reported development'}</p>
   <div className="articleBody"><ReactMarkdown>{a.body_markdown}</ReactMarkdown></div>
   <section className="sources"><h2>Sources</h2><ul>{a.sources.map((s,i)=><li key={i}><a href={s.url} rel="noreferrer" target="_blank">{s.publisher}</a></li>)}</ul></section>
   <p className="disclosure">Produced by The Global Analyst’s experimental AI newsroom from linked public reporting. Source checks are not independent fact verification.</p>
