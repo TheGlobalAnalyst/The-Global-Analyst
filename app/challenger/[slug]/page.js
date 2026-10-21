@@ -18,7 +18,7 @@ export default async function ChallengerArticle({params}) {
  if(error)throw new Error('Challenger publication unavailable');
  if(!data)notFound();
  const a=data.article;
- const v1=a.id?.startsWith('v1-');
+ const v1=/^v[12]-/.test(a.id||'');
  const teaser=v1?withoutInlineSources(a.teaser):a.teaser;
  const body=v1?withoutInlineSources(a.body_markdown):a.body_markdown;
  return <main className="container"><article className="article" data-content-sha256={data.content_sha256}>
