@@ -31,7 +31,7 @@ export default async function ArticlePage({params}){
   return (
     <main className="container">
       <article className="article" data-content-sha256={story.content_sha256 || undefined}>
-        <div className="kicker">{story.website_section}</div>
+        <div className="kicker">{story.lead_label || story.website_section}</div>
         <h1>{story.headline}</h1>
         <p className="standfirst">{story.teaser}</p>
         <div className="articleMeta"><StoryMeta story={story}/></div>
