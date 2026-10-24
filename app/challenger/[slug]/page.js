@@ -22,7 +22,7 @@ export default async function ChallengerArticle({params}) {
  const teaser=v1?withoutInlineSources(a.teaser):a.teaser;
  const body=v1?withoutInlineSources(a.body_markdown):a.body_markdown;
  return <main className="container"><article className="article" data-content-sha256={data.content_sha256}>
-  <div className="kicker">The Sahel Brief · Challenger V0</div>
+  <div className="kicker">{a.editorial_role==='lead'?"Today's lead":a.topic_label || 'The Sahel Brief'}</div>
   <h1>{a.headline}</h1><div className="standfirst"><ReactMarkdown>{teaser}</ReactMarkdown></div>
   <p className="articleMeta">Edition: {a.window_end.slice(0,10)} · {a.section==='ongoing'?'Ongoing development':'Reported development'}</p>
   <div className="articleBody"><ReactMarkdown>{body}</ReactMarkdown></div>
@@ -30,3 +30,4 @@ export default async function ChallengerArticle({params}) {
   <p className="disclosure">Produced by The Global Analyst’s experimental AI newsroom from linked public reporting. Source checks are not independent fact verification.</p>
  </article></main>;
 }
+
