@@ -6,7 +6,8 @@ test('only scheduled approved V2 hierarchy articles qualify; citations stay at b
  const source=row();const out=approvedV2Rows([source]);assert.equal(out.length,1);assert.equal(out[0].lead_label,"Today's lead");assert.equal(out[0].featured,true);assert.equal(out[0].teaser,'A readable teaser.');assert.equal(out[0].body_markdown,'Useful article.');assert.equal(out[0].citations.length,1);
  for(const mutation of [{feed_origin:'scheduled_v0'},{feed_visible:false},{editorial_order:2},{editorial_role:'unknown'},{id:'v1-story-1'}]){const bad=row();Object.assign(bad.article,mutation);assert.equal(approvedV2Rows([bad]).length,0);}
 });
-test('V2 replaces same-window V0 in feeds while retaining older editions as fallback',()=>{
+test('V0 is never a feed fallback and explicitly owner-approved V2 qualifies',()=>{
  const lead=approvedV2Rows([row()])[0];const current={source:'v0',edition_cutoff:lead.edition_cutoff};const older={source:'v0',edition_cutoff:'2026-10-24T05:30:00Z'};
- assert.deepEqual(preferV2Editions([current,older]),[current,older]);assert.deepEqual(preferV2Editions([current,older,lead]),[older,lead]);
+ assert.deepEqual(preferV2Editions([current,older]),[]);assert.deepEqual(preferV2Editions([current,older,lead]),[lead]);
+ const approved=row();approved.article.feed_origin='owner_approved_v2';assert.equal(approvedV2Rows([approved]).length,1);
 });
