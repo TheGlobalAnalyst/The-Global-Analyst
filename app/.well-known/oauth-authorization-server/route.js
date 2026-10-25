@@ -4,7 +4,7 @@ export function GET(){
  const base='https://yugoifzlhfubxefawqqs.supabase.co/functions/v1/tga-integration-gateway';
  return Response.json({
   issuer:'https://www.theglobalanalyst.com',
-  authorization_endpoint:base+'/oauth/authorize',
+  authorization_endpoint:'https://www.theglobalanalyst.com/gateway/authorize',
   token_endpoint:base+'/oauth/token',
   registration_endpoint:base+'/oauth/register',
   revocation_endpoint:base+'/oauth/revoke',
