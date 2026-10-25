@@ -10,9 +10,14 @@ export async function GET(request){
   const body=await response.text();
   if(!response.ok)return Response.json({error:'gateway_authorization_failed'},{status:response.status,headers:{'Cache-Control':'no-store'}});
   if(body.length>100000||!body.startsWith('<!doctype html>')||!body.includes('name="owner_key"'))return Response.json({error:'authorization_document_mismatch'},{status:502});
+  const callback=new URL(request.url).searchParams.get('redirect_uri');
+  let callbackOrigin='';
+  if(callback){const target=new URL(callback);if(target.protocol!=='https:'||target.username||target.password)return Response.json({error:'authorization_callback_mismatch'},{status:502});callbackOrigin=' '+target.origin;}
+  // The upstream has validated this exact registered callback. Chrome/Safari
+  // apply form-action to the post-approval redirect as well as the initial POST.
   return new Response(body,{headers:{
    'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store',
-   'Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; form-action https://yugoifzlhfubxefawqqs.supabase.co; frame-ancestors 'none'; base-uri 'none'",
+   'Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; form-action https://yugoifzlhfubxefawqqs.supabase.co"+callbackOrigin+"; frame-ancestors 'none'; base-uri 'none'",
    'Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff'
   }});
  }catch{return Response.json({error:'gateway_authorization_unavailable'},{status:502,headers:{'Cache-Control':'no-store'}});}
