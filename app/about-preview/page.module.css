@@ -1,0 +1,234 @@
+.page {
+  padding-bottom: 24px;
+}
+
+.preview {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  margin: 0 0 18px;
+  color: var(--red);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.hero {
+  padding: 64px 0 58px;
+  border-bottom: 1px solid var(--line);
+}
+
+.hero h1 {
+  max-width: 1100px;
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(52px, 7.3vw, 96px);
+  font-weight: 700;
+  letter-spacing: -.055em;
+  line-height: 1.02;
+}
+
+.hero h1 span {
+  color: var(--red);
+}
+
+.deck {
+  margin: 30px 0 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(22px, 2.6vw, 30px);
+  line-height: 1.35;
+}
+
+.mission {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 80px;
+  padding: 64px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.mission h2,
+.sectionHeading h2,
+.evidence h2,
+.closing h2 {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(32px, 3.8vw, 46px);
+  letter-spacing: -.035em;
+  line-height: 1.12;
+}
+
+.missionCopy p {
+  margin: 0 0 22px;
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.missionCopy .statement {
+  margin: 28px 0 0;
+  font-size: 19px;
+  line-height: 1.5;
+}
+
+.newsroom {
+  padding: 64px 0;
+}
+
+.sectionHeading {
+  margin-bottom: 38px;
+}
+
+.sectionHeading > p:last-child {
+  max-width: 650px;
+  margin: 18px 0 0;
+  font-size: 19px;
+  line-height: 1.6;
+}
+
+.teamGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px 28px;
+}
+
+.member {
+  min-width: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.portrait {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  background: var(--soft);
+}
+
+.memberCopy {
+  padding: 23px 0 28px;
+}
+
+.member h3 {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 27px;
+  letter-spacing: -.025em;
+  line-height: 1.17;
+}
+
+.tagline {
+  margin: 13px 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.description {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.evidence {
+  padding: 45px 48px;
+  background: var(--soft);
+  border-top: 3px solid var(--red);
+}
+
+.evidenceCopy {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 64px;
+  margin-top: 26px;
+}
+
+.evidenceCopy p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.evidenceStatement {
+  margin: 34px 0 0;
+  padding-top: 26px;
+  border-top: 1px solid #d5d3cd;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(23px, 2.8vw, 31px);
+  letter-spacing: -.02em;
+  line-height: 1.3;
+}
+
+.closing {
+  padding: 64px 0 58px;
+  border-bottom: 1px solid var(--line);
+}
+
+.closing > p:not(.eyebrow) {
+  max-width: 630px;
+  margin: 23px 0 0;
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.closing .signoff {
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+@media (max-width: 960px) {
+  .teamGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mission,
+  .evidenceCopy {
+    gap: 36px;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero {
+    padding: 42px 0 38px;
+  }
+
+  .hero h1 {
+    font-size: clamp(43px, 10.6vw, 62px);
+  }
+
+  .deck {
+    margin-top: 24px;
+  }
+
+  .mission,
+  .evidenceCopy,
+  .teamGrid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .mission,
+  .newsroom,
+  .closing {
+    padding-top: 40px;
+    padding-bottom: 40px;
+  }
+
+  .missionCopy p {
+    font-size: 17px;
+  }
+
+  .evidence {
+    padding: 30px 23px;
+  }
+
+  .member h3 {
+    font-size: 28px;
+  }
+}
