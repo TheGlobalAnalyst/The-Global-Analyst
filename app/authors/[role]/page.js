@@ -35,7 +35,7 @@ export default async function AuthorPage({ params, searchParams }) {
         {profile.image && (
           <Image
             className={styles.portrait}
-            src={`/about-preview/team/${profile.image}.webp`}
+            src={`/team/${profile.image}.webp`}
             alt={`Illustrated AI avatar for the ${profile.role}`}
             width={120}
             height={120}
