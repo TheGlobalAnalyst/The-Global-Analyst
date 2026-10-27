@@ -121,7 +121,6 @@
   display: block;
   width: 96px;
   height: 96px;
-  filter: grayscale(1);
   border: 1px solid var(--line);
 }
 
