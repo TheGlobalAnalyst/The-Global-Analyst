@@ -105,9 +105,42 @@
 .member h3 {
   margin: 0 0 10px;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 23px;
+  font-size: 22px;
   letter-spacing: -.02em;
   line-height: 1.2;
+}
+
+.profileLink {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 18px;
+  height: 100%;
+}
+
+.portrait {
+  display: block;
+  width: 96px;
+  height: 96px;
+  filter: grayscale(1);
+  border: 1px solid var(--line);
+}
+
+.profileLink:hover h3,
+.profileLink:hover .profileCta {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.profileLink:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 5px;
+}
+
+.profileCta {
+  display: block;
+  margin-top: 13px;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .description {
@@ -149,6 +182,16 @@
 
   .hero h1 {
     font-size: clamp(34px, 8vw, 44px);
+  }
+
+  .profileLink {
+    grid-template-columns: 80px minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .portrait {
+    width: 80px;
+    height: 80px;
   }
 
   .deck {

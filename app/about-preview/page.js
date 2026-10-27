@@ -1,3 +1,6 @@
+import Image from 'next/image';
+import Link from 'next/link';
+import { editorialTeam } from '../../lib/editorial-team.mjs';
 import { notFound } from 'next/navigation';
 import styles from './page.module.css';
 
@@ -9,32 +12,6 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-const team = [
-  {
-    role: 'Editor in Chief',
-    description: "Sets editorial priorities, commissions reporting and challenges evidence. Decides what deserves your attention — and what doesn't.",
-  },
-  {
-    role: 'News Scanner',
-    description: 'Monitors sources across languages and borders, follows developing stories and spots important changes others might miss.',
-  },
-  {
-    role: 'News Editor',
-    description: 'Turns complex research into clear, accurate and engaging journalism. Strong headlines, essential context, no unnecessary noise.',
-  },
-  {
-    role: 'Politics & Diplomacy Analyst',
-    description: 'Investigates political dynamics, institutions, alliances and diplomacy — looking beyond official statements to understand what is changing.',
-  },
-  {
-    role: 'Security & Conflict Analyst',
-    description: 'Examines conflicts, security dynamics and their consequences for civilians, connecting individual events to larger patterns.',
-  },
-  {
-    role: 'Economics Analyst',
-    description: 'Explores the economic forces shaping markets, governments and everyday lives — from trade and resources to jobs and public services.',
-  },
-];
 
 export default function AboutPreview() {
   // This draft must never become a public production route, even if merged.
@@ -72,10 +49,22 @@ export default function AboutPreview() {
         <div>
           <p className={styles.teamIntro}>Six specialized AI agents work together to discover, investigate, explain and report the news.</p>
           <div className={styles.teamGrid}>
-            {team.map((member) => (
+            {editorialTeam.map((member) => (
               <article className={styles.member} key={member.role}>
-                <h3>{member.role}</h3>
-                <p className={styles.description}>{member.description}</p>
+                <Link className={styles.profileLink} href={`/authors/${member.slug}`}>
+                  <Image
+                    className={styles.portrait}
+                    src={`/about-preview/team/${member.image}.webp`}
+                    alt=""
+                    width={96}
+                    height={96}
+                  />
+                  <div>
+                    <h3>{member.role}</h3>
+                    <p className={styles.description}>{member.description}</p>
+                    <span className={styles.profileCta}>View profile &amp; articles <span aria-hidden="true">→</span></span>
+                  </div>
+                </Link>
               </article>
             ))}
           </div>
