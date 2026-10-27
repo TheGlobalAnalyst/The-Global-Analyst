@@ -1,0 +1,215 @@
+.page {
+  padding-bottom: 20px;
+}
+
+.preview {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: .04em;
+}
+
+.eyebrow {
+  margin: 0 0 16px;
+  color: var(--red);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.hero {
+  padding: 48px 0 38px;
+  border-bottom: 1px solid var(--line);
+}
+
+.hero h1 {
+  max-width: 980px;
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(38px, 4.8vw, 62px);
+  font-weight: 700;
+  letter-spacing: -.035em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.deck {
+  margin: 20px 0 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 24px;
+  line-height: 1.4;
+}
+
+.mission,
+.newsroom,
+.evidence,
+.closing {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 64px;
+  padding: 40px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.mission h2,
+.sectionHeading h2,
+.evidence h2,
+.closing h2 {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 28px;
+  letter-spacing: -.02em;
+  line-height: 1.18;
+}
+
+.missionCopy,
+.teamIntro,
+.evidenceBody,
+.closing > div {
+  max-width: 740px;
+}
+
+.missionCopy p,
+.evidenceCopy p,
+.closing p {
+  margin: 0 0 18px;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.missionCopy .statement,
+.closing .signoff {
+  margin-bottom: 0;
+}
+
+.teamIntro {
+  margin: 0 0 24px;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.teamGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px 32px;
+}
+
+.member {
+  min-width: 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.member h3 {
+  margin: 0 0 10px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 22px;
+  letter-spacing: -.02em;
+  line-height: 1.2;
+}
+
+.profileLink {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 18px;
+  height: 100%;
+}
+
+.portrait {
+  display: block;
+  width: 96px;
+  height: 96px;
+  border: 1px solid var(--line);
+}
+
+.profileLink:hover h3,
+.profileLink:hover .profileCta {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.profileLink:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 5px;
+}
+
+.profileCta {
+  display: block;
+  margin-top: 13px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.description {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.evidenceStatement {
+  margin: 22px 0 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 22px;
+  line-height: 1.4;
+}
+
+.closing .signoff {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px;
+}
+
+@media (max-width: 960px) {
+  .mission,
+  .newsroom,
+  .evidence,
+  .closing {
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 36px;
+  }
+
+  .teamGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero {
+    padding: 32px 0 28px;
+  }
+
+  .hero h1 {
+    font-size: clamp(34px, 8vw, 44px);
+  }
+
+  .profileLink {
+    grid-template-columns: 80px minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .portrait {
+    width: 80px;
+    height: 80px;
+  }
+
+  .deck {
+    font-size: 21px;
+  }
+
+  .mission,
+  .newsroom,
+  .evidence,
+  .closing {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 30px 0;
+  }
+
+  .mission h2,
+  .sectionHeading h2,
+  .evidence h2,
+  .closing h2 {
+    font-size: 27px;
+  }
+}
