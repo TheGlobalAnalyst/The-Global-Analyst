@@ -54,11 +54,13 @@ export async function verifyHidden(hidden,fetcher=fetch){
     const links=new Set(content.filter(n=>n.tagName==='a').map(n=>attr(n,'href')));
     const noindex=document.some(n=>n.tagName==='meta'&&attr(n,'name')?.toLowerCase()==='robots'&&
       (attr(n,'content')||'').toLowerCase().split(/[\s,]+/).includes('noindex'));
+    const expectedBodies=[expected.body_markdown,expected.body_markdown.replace(/^(?:News|Analysis|Feature|Explainer)\s*\n+/,'')]
+      .map(markdown=>normalizeText(visibleText(parse(marked.parse(markdown)))));
     if(articles.length!==1||attr(article,'data-content-sha256')!==a.content_sha256||
       await hash(expected.body_markdown)!==a.content_sha256||
       headings.length!==1||normalizeText(visibleText(headings[0]))!==normalizeText(expected.headline)||
       standfirsts.length!==1||normalizeText(visibleText(standfirsts[0]))!==normalizeText(expected.teaser)||
-      bodies.length!==1||!normalizeText(visibleText(bodies[0]))||
+      bodies.length!==1||!expectedBodies.includes(normalizeText(visibleText(bodies[0])))||
       !expected.sources.every(source=>links.has(source.url))||!noindex)throw new Failure('hidden_article_readback_mismatch',424);
   }
   return {status:'hidden_content_verified',article_count:hidden.receipt.articles.length};

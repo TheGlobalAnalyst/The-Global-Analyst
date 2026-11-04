@@ -47,6 +47,7 @@ const articleSchema={type:'object',additionalProperties:false,required:['headlin
 const payloadSchema={type:'object',additionalProperties:false,required:['edition_date','title','window_start','window_end','articles'],properties:{edition_date:{type:'string'},title:{type:'string'},window_start:{type:'string'},window_end:{type:'string'},articles:{type:'array',minItems:1,maxItems:15,items:articleSchema}}};
 const obj=(properties={},required=Object.keys(properties))=>({type:'object',additionalProperties:false,properties,required});
 const str={type:'string'};
+const authorSchema=obj({article_slug:{type:'string',pattern:'^v0-[a-f0-9]{24}$'},author_role_slug:{enum:['news-editor','economic-analyst','political-analyst','security-analyst']},author_role:str,author_agent_id:str,authorship_evidence:{type:'string',minLength:1,maxLength:2000}});
 export const TOOLS=[
   ['tga_status','Read gateway capabilities and whether provider credentials are configured. No credentials returned.',obj()],
   ['tga_submit_edition','Stage a private edition and its articles using the existing TGA publication contract. Never publishes.',obj({idempotency_key:str,payload:payloadSchema})],
@@ -57,7 +58,7 @@ export const TOOLS=[
   ['tga_create_newsletter_draft','Create a non-archived Buttondown draft. Never sends to anyone.',obj({idempotency_key:str,payload:obj({subject:str,body_html:str})})],
   ['tga_create_social_draft','Create a Buffer draft for an allowed X or LinkedIn channel. Never queues, schedules or posts.',obj({idempotency_key:str,payload:obj({channel_id:str,service:{enum:['twitter','linkedin']},text:str})})],
   ['tga_publish_hidden_edition','Make your stored edition readable at unlisted TGA article URLs. Requires tga:hidden. Not access-controlled; never enters public feeds.',obj({idempotency_key:str,payload:obj({draft_key:str})})],
-  ['tga_publish_public_edition','Promote an EIC-approved, verified hidden edition with explicit writing-agent provenance. Only operator-enabled clients. dry_run validates without publication.',obj({idempotency_key:str,payload:obj({hidden_key:str,eic_approved:{const:true},authors:{type:'array'},geography_labels:{type:'array',items:str},dry_run:{type:'boolean'}},['hidden_key','eic_approved','authors','geography_labels'])})],
+  ['tga_publish_public_edition','Promote an EIC-approved, verified hidden edition with explicit writing-agent provenance. Only operator-enabled clients. dry_run validates without publication.',obj({idempotency_key:str,payload:obj({hidden_key:str,eic_approved:{type:'boolean',const:true},authors:{type:'array',minItems:1,maxItems:15,items:authorSchema},geography_labels:{type:'array',minItems:1,maxItems:15,items:{type:'string',minLength:1,maxLength:80}},dry_run:{type:'boolean'}},['hidden_key','eic_approved','authors','geography_labels'])})],
   ['tga_verify_public_edition','Verify promoted public article content, authorship and disclosure.',obj({idempotency_key:str})],
   ['tga_verify_hidden_edition','Check live website hashes and headlines for your stored hidden edition.',obj({idempotency_key:str})],
   ['tga_send_owner_newsletter','Send the exact stored hidden edition through Buttondown ONLY to the fixed TGA owner. Requires tga:owner-send. No recipient or provider ID override.',obj({idempotency_key:str,payload:obj({hidden_key:str})})],
