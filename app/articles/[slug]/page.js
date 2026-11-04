@@ -1,3 +1,4 @@
+import {storyLabel,AI_DISCLOSURE} from '../../../lib/story-presentation.mjs';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
@@ -31,7 +32,7 @@ export default async function ArticlePage({params}){
   return (
     <main className="container">
       <article className="article" data-content-sha256={story.content_sha256 || undefined}>
-        <div className="kicker">{story.lead_label || story.website_section}</div>
+        <div className="kicker">{storyLabel(story)}</div>
         <h1>{story.headline}</h1>
         <p className="standfirst">{story.teaser}</p>
         <div className="articleMeta"><StoryMeta story={story}/></div>
@@ -49,7 +50,7 @@ export default async function ArticlePage({params}){
           </section>
         )}
 
-        <div className="disclosure"><strong>AI disclosure:</strong> {story.ai_disclosure}</div>
+        <div className="disclosure">{AI_DISCLOSURE}</div>
 
         <section className="signupBox">
           <div className="kicker">The Sahel Brief</div>
