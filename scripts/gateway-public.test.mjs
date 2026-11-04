@@ -17,3 +17,12 @@ test('explicit EIC approval is mandatory',async()=>{const f=await fixture();asse
 test('author identity cannot be inferred or mismatched',async()=>{const f=await fixture();const a=input();a.authors=[{...author,author_agent_id:'other'}];assert.equal((await f.call(a)).body.error,'author_identity');assert.equal(f.counts().writes,0);});
 test('dry-run verifies hidden edition but never promotes',async()=>{const f=await fixture();assert.equal((await f.call({...input(),dry_run:true})).body.status,'public_promotion_validated');assert.deepEqual(f.counts(),{writes:0,verified:1});});
 test('promotion follows hidden verification and dispatches atomic store method',async()=>{const f=await fixture();assert.equal((await f.call(input())).body.status,'public_ready');assert.deepEqual(f.counts(),{writes:1,verified:1});});
+import {verifyPublic} from '../integration/gateway/publishing.mjs';
+test('public verification rejects a page with correct hash marker but altered body',async()=>{
+ const body='News\n\nExact approved copy with [evidence](https://example.org/source).';
+ const slug='v0-'+'a'.repeat(24),digest=await hash(body);
+ const saved={payload:{articles:[{headline:'Sudan report',teaser:'Approved teaser',body_markdown:body,sources:[{url:'https://example.org/source'}]}]},receipt:{status:'public_ready',articles:[{slug,article_url:'https://www.theglobalanalyst.com/articles/'+slug,content_sha256:digest,author_role_slug:'news-editor'}]}};
+ const html=text=>`<article data-content-sha256="${digest}"><h1>Sudan report</h1><p class="standfirst">Approved teaser</p><a href="/authors/news-editor">News Editor</a><div class="articleBody"><p>${text} with <a href="https://example.org/source">evidence</a>.</p></div><div>Produced by The Global Analyst’s AI-powered newsroom.</div></article>`;
+ assert.equal((await verifyPublic(saved,async()=>new Response(html('Exact approved copy')))).status,'public_content_verified');
+ await assert.rejects(()=>verifyPublic(saved,async()=>new Response(html('Altered text'))),/public_body_mismatch/);
+});

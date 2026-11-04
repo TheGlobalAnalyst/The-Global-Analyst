@@ -12,7 +12,7 @@ begin
  select value into hidden from public.tga_gateway_state where key='hidden:'||p_hidden_key;
  if hidden is null or hidden->>'client' is distinct from p_client or hidden->'receipt'->>'status'<>'hidden_ready' then raise exception 'hidden_edition_required'; end if;
  if jsonb_array_length(p_authors)<>jsonb_array_length(hidden->'payload'->'articles') or jsonb_array_length(p_labels)<>jsonb_array_length(p_authors) then raise exception 'metadata_count'; end if;
- if exists(select 1 from public.tga_gateway_state where kind='public_edition' and value->>'hidden_key'=p_hidden_key) then raise exception 'edition_already_promoted' using errcode='23505'; end if;
+ if exists(select 1 from public.tga_gateway_state where key like 'public:%' and value->>'hidden_key'=p_hidden_key) then raise exception 'edition_already_promoted' using errcode='23505'; end if;
  for item in select value from jsonb_array_elements(hidden->'payload'->'articles') loop
    credit:=p_authors->i; s:=hidden->'receipt'->'articles'->i->>'slug';
    if credit->>'author_role_slug' not in ('news-editor','economic-analyst','political-analyst','security-analyst') or coalesce(length(credit->>'authorship_evidence'),0)=0 or coalesce(length(p_labels->>i),0)=0 then raise exception 'authorship_required'; end if;
@@ -25,7 +25,7 @@ begin
    i:=i+1;
  end loop;
  rec:=jsonb_build_object('status','public_ready','id',p_key,'articles',ids,'eic_approved',true,'public_feed_visible',true,'content_sha256',p_hash);
- insert into public.tga_gateway_state(key,kind,value) values(p_key,'operation',jsonb_build_object('client',p_client,'hash',p_hash,'receipt',rec)),('public:'||p_key,'public_edition',jsonb_build_object('client',p_client,'hidden_key',p_hidden_key,'payload',hidden->'payload','receipt',rec,'rollback_rows',oldrows));
+ insert into public.tga_gateway_state(key,kind,value) values(p_key,'operation',jsonb_build_object('client',p_client,'hash',p_hash,'receipt',rec)),('public:'||p_key,'edition',jsonb_build_object('client',p_client,'hidden_key',p_hidden_key,'payload',hidden->'payload','receipt',rec,'rollback_rows',oldrows));
  return rec;
 end $$;
 revoke all on function public.tga_gateway_publish_public(text,text,text,text,jsonb,jsonb) from public,anon,authenticated;

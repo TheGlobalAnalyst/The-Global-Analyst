@@ -24,4 +24,13 @@ Operator config public-client:tga_95e0c495eaa892e1902c81282db3e535 controls enab
 - Restore only the charter delivery paragraph from its pre-edit snapshot; preserve later newsroom history/discovery guidance.
 
 ## Validation record
-20 frontend/public Gateway unit and regression checks passed; Next15.5.28 production build passed (existing CSS alignment warning). These are not live public publication verification. Vercel access is a deployment blocker until consent is completed. No morning workflow authority is changed until deployed route is verified.
+21 frontend/public Gateway unit and regression checks passed; Next15.5.28 production build passed (existing CSS alignment warning). These are not live public publication verification. Vercel access is a deployment blocker until consent is completed. No morning workflow authority is changed until deployed route is verified.
+
+## Actual session state after implementation
+- Supabase Gateway deployed as edge version16, code0.3.0; original version13/code0.2.4 captured in gateway-v13.
+- Public RPC installed and transaction-tested against the existing seven approved4Nov hidden articles. Initial test caught the existing state-kind constraint; corrected by using the existing edition kind. Successful replay, changed-hash rejection and seven before-images asserted; transaction rolled back. Verified0 public HA rows and0 leftover test promotion rows.
+- Anonymous/authenticated cannot execute promotion RPC; service_role can. Client enabled:true/live:false; no public mutations allowed.
+- EIC confirmed code0.3.0 status through real connected integration, but new promotion/verification actions absent in its cached action catalog. No live HTTP dry-run result is claimed. Action-catalog refresh and Vercel team consent remain blockers.
+- Morning charter unchanged; proposed exact delivery replacement retained in EIC threadcmw166ax200k307adkdyofbk6. Current public baseline route remains operational. No email/social actions performed.
+
+- GitHub/Vercel Git integration built commit b15929583a1acc3bb103a3b8cf94bff05f7f0294 successfully. Preview https://theglobalanalyst-441zo7lir-the-global-analyst.vercel.app is protected and redirects to Vercel login, so it is NOT live-verified. Clean local production build completed after moving a stale .next directory aside.
