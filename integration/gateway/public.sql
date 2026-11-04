@@ -30,3 +30,5 @@ begin
 end $$;
 revoke all on function public.tga_gateway_publish_public(text,text,text,text,jsonb,jsonb) from public,anon,authenticated;
 grant execute on function public.tga_gateway_publish_public(text,text,text,text,jsonb,jsonb) to service_role;
+-- Invoker RPC needs only these two column writes; no client grants or definer bypass.
+grant update(article,publication_approved) on public.challenger_v0_articles to service_role;
