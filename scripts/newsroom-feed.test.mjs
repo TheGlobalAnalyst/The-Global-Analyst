@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {hyperagentFeed,homepageNewsroom} from '../lib/newsroom-feed.mjs';
+import {hyperagentFeed,homepageNewsroom,frozenHistoricalArticle} from '../lib/newsroom-feed.mjs';
 
 test('later baseline reporting windows never displace Hyperagent or feed fresh legacy copy',()=>{
   const ha={slug:'approved-ha',source:'hyperagent',published_at:'2026-11-04T06:20:00Z',edition_cutoff:'2026-11-04T06:00:00Z'};
@@ -10,5 +10,7 @@ test('later baseline reporting windows never displace Hyperagent or feed fresh l
   assert.deepEqual(feed.map(a=>a.slug),['approved-ha','historic-v2']);
   assert.deepEqual(homepageNewsroom(feed),[ha]);
   assert.deepEqual(homepageNewsroom([old]),[old]);
+  assert.equal(frozenHistoricalArticle(fresh,'2026-11-04T20:30:00Z'),null);
+  assert.equal(frozenHistoricalArticle(old,'2026-11-04T20:30:00Z'),old);
   assert.throws(()=>hyperagentFeed([ha],[old],'invalid'),/cutoff/);
 });
