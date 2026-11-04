@@ -1,5 +1,7 @@
 # Hyperagent public migration — 4 November 2026
 
+Historical implementation record. Current deployed state and remaining scheduler limitation: [DEPLOYED_MIGRATION_20261104.md](DEPLOYED_MIGRATION_20261104.md).
+
 ## Implementation
 PR #21 carries frontend, portable live Gateway source, exact v13 rollback source, service-only transactional promotion SQL, staged baseline feed trigger and tests. No subscriber or social authorization is added.
 
