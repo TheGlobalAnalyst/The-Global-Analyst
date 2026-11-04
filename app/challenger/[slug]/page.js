@@ -1,3 +1,6 @@
+import Link from 'next/link';
+import {storyLabel,AI_DISCLOSURE} from '../../../lib/story-presentation.mjs';
+import StoryMeta from '../../../components/StoryMeta';
 import {notFound} from 'next/navigation';
 import {createClient} from '@supabase/supabase-js';
 import ReactMarkdown from 'react-markdown';
@@ -22,12 +25,12 @@ export default async function ChallengerArticle({params}) {
  const teaser=v1?withoutInlineSources(a.teaser):a.teaser;
  const body=v1?withoutInlineSources(a.body_markdown):a.body_markdown;
  return <main className="container"><article className="article" data-content-sha256={data.content_sha256}>
-  <div className="kicker">{a.editorial_role==='lead'?"Today's lead":a.topic_label || 'The Sahel Brief'}</div>
+  <div className="kicker">{storyLabel(a)}</div>
   <h1>{a.headline}</h1><div className="standfirst"><ReactMarkdown>{teaser}</ReactMarkdown></div>
-  <p className="articleMeta">Edition: {a.window_end.slice(0,10)} · {a.section==='ongoing'?'Ongoing development':'Reported development'}</p>
-  <div className="articleBody"><ReactMarkdown>{body}</ReactMarkdown></div>
+  {a.author_role && <StoryMeta story={{...a,published_at:a.edition_date}}/>}
+  <div className="articleBody"><ReactMarkdown>{body.replace(/^(?:News|Analysis|Feature|Explainer)\s*\n+/,'')}</ReactMarkdown></div>
   <section className="sources"><h2>Sources</h2><ul>{a.sources.map((s,i)=><li key={i}><a href={s.url} rel="noreferrer" target="_blank">{s.publisher}</a></li>)}</ul></section>
-  <p className="disclosure">Produced by The Global Analyst’s experimental AI newsroom from linked public reporting. Source checks are not independent fact verification.</p>
+  <p className="disclosure">{AI_DISCLOSURE}</p>
  </article></main>;
 }
 

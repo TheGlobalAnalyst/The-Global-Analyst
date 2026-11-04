@@ -1,3 +1,4 @@
+import {storyLabel} from '../lib/story-presentation.mjs';
 import Link from 'next/link';
 import StoryMeta from '../components/StoryMeta';
 import { getHomepageData } from '../lib/publication-source';
@@ -12,7 +13,7 @@ export default async function Home(){
       {featured && (
         <section className="hero">
           <div className="container">
-            <div className="kicker">Today's lead</div>
+            <div className="kicker">{storyLabel(featured)}</div>
             <h1 className="heroTitle"><Link href={`/articles/${featured.slug}`}>{featured.headline}</Link></h1>
             <p className="heroDeck">{featured.teaser}</p>
             <StoryMeta story={featured}/>
