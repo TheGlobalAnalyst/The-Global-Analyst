@@ -8,7 +8,6 @@ export default function StoryMeta({story}){
   return (
     <div className="meta">
       <Link href={`/authors/${articleProfileSlug(story) || story.author_role_slug || 'general-analyst'}`}><strong>{story.author_role}</strong></Link>
-      <span> · {story.reading_time_minutes || 4} min read</span>
       {date && <span> · {date}</span>}
     </div>
   );
