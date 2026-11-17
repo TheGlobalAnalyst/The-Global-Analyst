@@ -1,3 +1,4 @@
+import {editorialTopicLabel} from '../../lib/story-presentation.mjs';
 import Link from 'next/link';
 import StoryMeta from '../../components/StoryMeta';
 import { getNewsArchive } from '../../lib/publication-source';
@@ -25,7 +26,7 @@ export default async function NewsArchive({ searchParams }) {
           <div className="storyGrid">
             {articles.map(story => (
               <article className="storyCard" key={story.id || story.canonical_key}>
-                <div className="kicker">{story.countries?.[0] || 'News'}</div>
+                <div className="kicker">{editorialTopicLabel(story) || story.countries?.[0] || 'News'}</div>
                 <h2><Link href={`/articles/${story.slug}`}>{story.headline}</Link></h2>
                 <p>{story.teaser}</p>
                 <StoryMeta story={story}/>

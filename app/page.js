@@ -1,4 +1,4 @@
-import {storyLabel} from '../lib/story-presentation.mjs';
+import {storyLabel, editorialTopicLabel} from '../lib/story-presentation.mjs';
 import Link from 'next/link';
 import StoryMeta from '../components/StoryMeta';
 import { getHomepageData } from '../lib/publication-source';
@@ -27,7 +27,7 @@ export default async function Home(){
           <div className="storyGrid">
             {latestNews.map(story => (
               <article className="storyCard" key={story.canonical_key}>
-                <div className="kicker">{story.countries?.[0] || 'News'}</div>
+                <div className="kicker">{editorialTopicLabel(story) || story.countries?.[0] || 'News'}</div>
                 <h3><Link href={`/articles/${story.slug}`}>{story.headline}</Link></h3>
                 <p>{story.teaser}</p>
                 <StoryMeta story={story}/>
@@ -54,7 +54,7 @@ export default async function Home(){
           <div className="analysisGrid">
             {analysis.map(story => (
               <article className="analysisCard" key={story.canonical_key}>
-                <div className="kicker">{story.website_section}</div>
+                <div className="kicker">{editorialTopicLabel(story) || story.website_section}</div>
                 <h3><Link href={`/articles/${story.slug}`}>{story.headline}</Link></h3>
                 <p>{story.teaser}</p>
                 <StoryMeta story={story}/>

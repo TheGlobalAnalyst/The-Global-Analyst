@@ -1,8 +1,8 @@
 // Portable Fetch API handler. No model calls, scheduler or public delivery code.
 import {ownerNewsletter,verifyHidden,verifyPublic} from './publishing.mjs';
-export const VERSION = '0.3.0';
+export const VERSION = '0.4.0';
 export const LEGACY_SCOPES = 'tga:read tga:drafts';
-export const SCOPES = LEGACY_SCOPES+' tga:hidden tga:owner-send tga:files';
+export const SCOPES = LEGACY_SCOPES+' tga:hidden tga:owner-send tga:files tga:unpublish tga:purge';
 export class Failure extends Error {
   constructor(code, status=400) { super(code); this.code=code; this.status=status; }
 }
@@ -23,8 +23,10 @@ export function edition(payload,standalone=false) {
   must(Array.isArray(payload.articles)&&payload.articles.length>=1&&payload.articles.length<=15,'articles');
   must(!standalone||payload.articles.length===1,'standalone_article_count');
   for(const a of payload.articles){
-    exact(a,['headline','teaser','body_markdown','sources','role','topic_label']);
+    exact(a,['headline','teaser','body_markdown','sources','role','topic_label','genre','editorial_topic_label']);
     text(a.headline,240);text(a.teaser,1500);text(a.body_markdown,65000);text(a.topic_label,80);
+    if (Object.hasOwn(a,'editorial_topic_label')) text(a.editorial_topic_label,80);
+    if (Object.hasOwn(a,'genre')) must(['news','analysis','feature'].includes(a.genre) && (a.role==='analysis')===(a.genre!=='news'),'article_genre');
     must(['lead','top','analysis','also'].includes(a.role),'role');
     must(Array.isArray(a.sources)&&a.sources.length>=1&&a.sources.length<=12,'sources');a.sources.forEach(source);
   }
@@ -35,6 +37,7 @@ export function edition(payload,standalone=false) {
 }
 export const CONTRACT={version:VERSION,mode:'approved_public_and_owner_only',sections:['lead','top','analysis','also'],
   website:{draft_table:'public_articles',hidden_table:'challenger_v0_articles',hidden_feed_visible:false,hidden_access:'unlisted_not_access_controlled',public_publication:true},
+  depublication:{unpublish_scope:'tga:unpublish',delete_scope:'tga:purge',restore:true,delivery_history_preserved:true,fresh_run_keys_required:true},
   email:{provider:'Buttondown',archival_mode:'disabled',owner_only_sending:true,recipient:'benjaminmoscovici@gmail.com',subscriber_sending:false},
   social:{provider:'Buffer',services:['twitter','linkedin'],saveToDraft:true,posting:false},
   data:{allowed:['recent_published_articles','publication_contract'],arbitrary_sql:false},
@@ -43,10 +46,12 @@ export const CONTRACT={version:VERSION,mode:'approved_public_and_owner_only',sec
 const articleSchema={type:'object',additionalProperties:false,required:['headline','teaser','body_markdown','sources','role','topic_label'],properties:{
   headline:{type:'string',maxLength:240},teaser:{type:'string',maxLength:1500},body_markdown:{type:'string',maxLength:65000},
   sources:{type:'array',minItems:1,maxItems:12,items:{type:'object',additionalProperties:false,required:['url','publisher'],properties:{url:{type:'string'},publisher:{type:'string'}}}},
-  role:{enum:['lead','top','analysis','also']},topic_label:{type:'string',maxLength:80}}};
+  role:{enum:['lead','top','analysis','also']},topic_label:{type:'string',maxLength:80},
+  genre:{enum:['news','analysis','feature']},editorial_topic_label:{type:'string',minLength:1,maxLength:80}}};
 const payloadSchema={type:'object',additionalProperties:false,required:['edition_date','title','window_start','window_end','articles'],properties:{edition_date:{type:'string'},title:{type:'string'},window_start:{type:'string'},window_end:{type:'string'},articles:{type:'array',minItems:1,maxItems:15,items:articleSchema}}};
 const obj=(properties={},required=Object.keys(properties))=>({type:'object',additionalProperties:false,properties,required});
 const str={type:'string'};
+const lifecycleSchema=obj({hidden_key:str,article_slug:{type:'string',pattern:'^v0-[a-f0-9]{24}$'},draft_key:str,dry_run:{type:'boolean'},confirm_delete:{type:'boolean'},expected_revision:{type:'string',pattern:'^[a-f0-9]{64}$'}},['hidden_key']);
 const authorSchema=obj({article_slug:{type:'string',pattern:'^v0-[a-f0-9]{24}$'},author_role_slug:{enum:['news-editor','economic-analyst','political-analyst','security-analyst']},author_role:str,author_agent_id:str,authorship_evidence:{type:'string',minLength:1,maxLength:2000}});
 export const TOOLS=[
   ['tga_status','Read gateway capabilities and whether provider credentials are configured. No credentials returned.',obj()],
@@ -61,12 +66,15 @@ export const TOOLS=[
   ['tga_publish_public_edition','Promote an EIC-approved, verified hidden edition with explicit writing-agent provenance. Only operator-enabled clients. dry_run validates without publication.',obj({idempotency_key:str,payload:obj({hidden_key:str,eic_approved:{type:'boolean',const:true},authors:{type:'array',minItems:1,maxItems:15,items:authorSchema},geography_labels:{type:'array',minItems:1,maxItems:15,items:{type:'string',minLength:1,maxLength:80}},dry_run:{type:'boolean'}},['hidden_key','eic_approved','authors','geography_labels'])})],
   ['tga_verify_public_edition','Verify promoted public article content, authorship and disclosure.',obj({idempotency_key:str})],
   ['tga_verify_hidden_edition','Check live website hashes and headlines for your stored hidden edition.',obj({idempotency_key:str})],
+  ['tga_unpublish','Withdraw your own article or edition from public/unlisted URLs and feeds, retaining records for restoration. Requires tga:unpublish. Optional dry_run makes no changes.',obj({idempotency_key:str,payload:lifecycleSchema})],
+  ['tga_restore_publication','Restore a light-unpublished article or edition to its exact previous visibility. Requires tga:unpublish. Cannot restore deleted content.',obj({idempotency_key:str,payload:lifecycleSchema})],
+  ['tga_delete_publication','Permanently remove your own gateway editorial records. Requires tga:purge. First use dry_run:true; execute with dry_run:false, confirm_delete:true and the returned expected_revision. Delivery/deletion ledger stays. Use fresh run keys afterwards; external files and sent emails are not erased.',obj({idempotency_key:str,payload:lifecycleSchema})],
   ['tga_send_owner_newsletter','Send the exact stored hidden edition through Buttondown ONLY to the fixed TGA owner. Requires tga:owner-send. No recipient or provider ID override.',obj({idempotency_key:str,payload:obj({hidden_key:str})})],
   ['tga_inspect_infrastructure','Read bounded GitHub/GitLab/Vercel service metadata; never credentials, source files or deployment mutation.',obj({payload:obj({provider:{enum:['github','gitlab','vercel']}})})],
   ['tga_read_workspace_file','Read your own exported file in a separate TGA newsroom workspace repository. Requires tga:files.',obj({payload:obj({provider:{enum:['github','gitlab']},path:str})})],
   ['tga_export_workspace_file','Create an immutable file only in your client namespace in a separate newsroom workspace repository. Never modifies Python or website repositories. Requires tga:files.',obj({idempotency_key:str,payload:obj({provider:{enum:['github','gitlab']},path:str,content:str})})],
   ['tga_get_receipt','Read the immutable outcome for this integration and idempotency key.',obj({idempotency_key:str})],
-].map(([name,description,inputSchema])=>({name,description,inputSchema,annotations:{readOnlyHint:['tga_status','tga_get_draft','tga_read_articles','tga_get_receipt','tga_list_social_channels','tga_verify_hidden_edition','tga_verify_public_edition','tga_read_workspace_file','tga_inspect_infrastructure'].includes(name),destructiveHint:false,idempotentHint:true,openWorldHint:name.includes('newsletter')||name.includes('social')||name.includes('hidden')}}));
+].map(([name,description,inputSchema])=>({name,description,inputSchema,annotations:{readOnlyHint:['tga_status','tga_get_draft','tga_read_articles','tga_get_receipt','tga_list_social_channels','tga_verify_hidden_edition','tga_verify_public_edition','tga_read_workspace_file','tga_inspect_infrastructure'].includes(name),destructiveHint:['tga_unpublish','tga_restore_publication','tga_delete_publication'].includes(name),idempotentHint:true,openWorldHint:name.includes('newsletter')||name.includes('social')||name.includes('hidden')}}));
 
 export function createGateway({store,providers,base,issuer=base,authorizationEndpoint=base+'/oauth/authorize',resourceAliases=[],verifyCI=async()=>false,verifyWebsite=verifyHidden,infra,now=()=>Date.now()}) {
   const audiences=[base+'/mcp',...resourceAliases];
@@ -88,7 +96,7 @@ export function createGateway({store,providers,base,issuer=base,authorizationEnd
     await put('refresh:'+await hash(refresh),'refresh',{client,aud,scope},2592000);
     return {access_token:access,refresh_token:refresh,token_type:'Bearer',expires_in:3600,scope};
   };
-  const toolScope={tga_publish_public_edition:'tga:hidden',tga_verify_public_edition:'tga:hidden',tga_publish_hidden_edition:'tga:hidden',tga_verify_hidden_edition:'tga:hidden',tga_send_owner_newsletter:'tga:owner-send',tga_inspect_infrastructure:'tga:files',tga_read_workspace_file:'tga:files',tga_export_workspace_file:'tga:files'};
+  const toolScope={tga_unpublish:'tga:unpublish',tga_restore_publication:'tga:unpublish',tga_delete_publication:'tga:purge',tga_publish_public_edition:'tga:hidden',tga_verify_public_edition:'tga:hidden',tga_publish_hidden_edition:'tga:hidden',tga_verify_hidden_edition:'tga:hidden',tga_send_owner_newsletter:'tga:owner-send',tga_inspect_infrastructure:'tga:files',tga_read_workspace_file:'tga:files',tga_export_workspace_file:'tga:files'};
   const visibleTools=who=>TOOLS.filter(t=>!toolScope[t.name]||(who.scope||LEGACY_SCOPES).split(' ').includes(toolScope[t.name]));
   const operationKey=(client,id)=>{must(keyPattern.test(id||''),'idempotency_key');return 'op:'+client+':'+id;};
   async function operation(name,args,who) {
@@ -109,6 +117,23 @@ export function createGateway({store,providers,base,issuer=base,authorizationEnd
     const key=operationKey(who.client,args.idempotency_key);
     if(name==='draft.get'){const x=await fresh('edition:'+key);must(x&&x.client===who.client,'not_found',404);return x;}
     if(name==='receipt.get'){const x=await fresh(key);must(x&&x.client===who.client,'not_found',404);return x.receipt||{status:'outcome_unknown',automatic_retry:false};}
+    if(['website.unpublish','website.restore','website.delete'].includes(name)){
+      const action=name.split('.')[1];requireScope(action==='delete'?'tga:purge':'tga:unpublish');
+      exact(args.payload,['hidden_key','article_slug','draft_key','dry_run','confirm_delete','expected_revision']);
+      const p=args.payload;
+      must(p.dry_run===undefined||typeof p.dry_run==='boolean','dry_run');
+      must(p.article_slug===undefined||/^v0-[a-f0-9]{24}$/.test(p.article_slug),'article_slug');
+      const hiddenKey=operationKey(who.client,p.hidden_key);
+      const draftKey=p.draft_key===undefined?null:operationKey(who.client,p.draft_key);
+      const dryRun=action==='delete'?p.dry_run!==false:p.dry_run===true;
+      if(action==='delete'&&!dryRun){
+        must(p.confirm_delete===true,'delete_confirmation_required',403);
+        must(typeof p.expected_revision==='string'&&/^[a-f0-9]{64}$/.test(p.expected_revision),'deletion_revision_required');
+      }
+      must(store.depublication,'lifecycle_not_configured',424);
+      return store.depublication({key,client:who.client,hash:await hash({name,payload:p}),hiddenKey,action,
+        slug:p.article_slug??null,draftKey,dryRun,revision:p.expected_revision??null});
+    }
     if(name==='edition.submit'||name==='article.submit')return store.submit(key,who.client,await hash({name,payload:edition(args.payload,name==='article.submit')}),args.payload);
     if(name==='website.public'||name==='website.verify_public'){
       requireScope('tga:hidden');
@@ -122,7 +147,7 @@ export function createGateway({store,providers,base,issuer=base,authorizationEnd
       must(args.payload.eic_approved===true,'eic_approval_required',403);
       must(args.payload.dry_run===true||enabled.live===true,'public_cutover_not_enabled',403);
       const hiddenKey=operationKey(who.client,args.payload.hidden_key);
-      const hidden=await fresh('hidden:'+hiddenKey);must(hidden?.client===who.client,'not_found',404);
+      const hidden=await fresh('hidden:'+hiddenKey);must(hidden?.client===who.client,'not_found',404);must(hidden.payload&&!hidden.deleted&&!hidden.depublication_active,'edition_not_active',409);
       const authors=args.payload.authors, labels=args.payload.geography_labels;
       must(Array.isArray(authors)&&authors.length===hidden.payload.articles.length,'authorship_required');
       must(Array.isArray(labels)&&labels.length===authors.length,'geography_labels_required');
@@ -140,27 +165,30 @@ export function createGateway({store,providers,base,issuer=base,authorizationEnd
     if(name==='website.hidden'){
       exact(args.payload,['draft_key']);
       const original=await fresh('edition:'+operationKey(who.client,args.payload.draft_key));
-      must(original?.client===who.client,'not_found',404);
-      return store.hidden(key,who.client,await hash({name,payload:original.payload}),original.payload);
+      must(original?.client===who.client,'not_found',404);must(original.payload&&!original.deleted&&!original.depublication_active,'edition_not_active',409);
+      return store.hidden(key,who.client,await hash({name,payload:original.payload}),original.payload,operationKey(who.client,args.payload.draft_key));
     }
     if(name==='website.verify_hidden'){
-      const hidden=await fresh('hidden:'+key);must(hidden?.client===who.client,'not_found',404);
+      const hidden=await fresh('hidden:'+key);must(hidden?.client===who.client,'not_found',404);must(hidden.payload&&!hidden.deleted&&!hidden.depublication_active,'edition_not_active',409);
       return verifyWebsite(hidden);
     }
     must(['newsletter.draft','social.draft','newsletter.send_owner','workspace.export'].includes(name),'unknown_operation',404);
     let input=args.payload;
-    let hidden,deliveryKey;
+    let hidden,deliveryKey,hiddenId;
     if(name==='newsletter.send_owner'){
       exact(input,['hidden_key']);
       hidden=await fresh('hidden:'+operationKey(who.client,input.hidden_key));
-      must(hidden?.client===who.client,'not_found',404);
-      input={...ownerNewsletter(hidden),hidden_key:input.hidden_key};
-      deliveryKey='delivery:'+who.client+':'+await hash(input.hidden_key);
+      must(hidden?.client===who.client,'not_found',404);must(hidden.payload&&!hidden.deleted&&!hidden.depublication_active,'edition_not_active',409);
+      hiddenId=input.hidden_key;
+      input={...ownerNewsletter(hidden),hidden_key:hiddenId};
+      deliveryKey='delivery:'+who.client+':'+await hash(hiddenId);
     }
     else if(name==='workspace.export'){exact(input,['provider','path','content']);text(input.path,180);text(input.content,200000);}
     else if(name==='newsletter.draft'){exact(input,['subject','body_html']);text(input.subject,240);text(input.body_html,300000);}
     else {exact(input,['channel_id','service','text']);text(input.channel_id,100);text(input.text,input.service==='twitter'?280:3000);must(['twitter','linkedin'].includes(input.service),'service');}
-    const digest=await hash({name,payload:input});
+    // Retain the original owner-send fingerprint for receipt replay and rollback.
+    const identity=hidden?{...ownerNewsletter(hidden,{legacy:true}),hidden_key:hiddenId}:input;
+    const digest=await hash({name,payload:identity});
     const previous=await fresh(key);
     if(previous){must(previous.hash===digest,'idempotency_conflict',409);return previous.receipt||{status:'outcome_unknown',automatic_retry:false};}
     // Check credentials and channel ownership before reserving a non-retryable external action.
@@ -170,12 +198,13 @@ export function createGateway({store,providers,base,issuer=base,authorizationEnd
       await verifyWebsite(hidden);
     }
     if(name==='workspace.export')await infra.preflight(input.provider);else await providers.preflight(name,input);
-    const inserted=await put(key,'operation',{client:who.client,hash:digest,status:'pending'});
-    if(!inserted){const concurrent=await fresh(key);must(concurrent?.hash===digest,'idempotency_conflict',409);return concurrent.receipt||{status:'outcome_unknown',automatic_retry:false};}
-    if(deliveryKey&&!await put(deliveryKey,'operation',{client:who.client,operation_key:key})){
-      const delivery=await fresh(deliveryKey);const prior=await fresh(delivery.operation_key);
-      const receipt=prior?.receipt||{status:'outcome_unknown',automatic_retry:false};
-      await store.replace(key,{client:who.client,hash:digest,receipt});return receipt;
+    if(hidden){
+      must(store.reserveOwnerSend,'lifecycle_not_configured',424);
+      const reservation=await store.reserveOwnerSend(key,who.client,digest,operationKey(who.client,input.hidden_key),deliveryKey);
+      if(reservation.reserved!==true)return reservation;
+    }else{
+      const inserted=await put(key,'operation',{client:who.client,hash:digest,status:'pending'});
+      if(!inserted){const concurrent=await fresh(key);must(concurrent?.hash===digest,'idempotency_conflict',409);return concurrent.receipt||{status:'outcome_unknown',automatic_retry:false};}
     }
     let receipt;
     try{receipt=name==='newsletter.send_owner'?await providers.sendOwner(input):name==='workspace.export'?await infra.export(input.provider,who.client,input.path,input.content):await providers.draft(name,input);}
@@ -209,7 +238,7 @@ export function createGateway({store,providers,base,issuer=base,authorizationEnd
         must(!q.resource||audiences.includes(q.resource),'invalid_target');
         must(await store.capacity('flow',64),'authorization_limit',429);
         const flow=random();await put('flow:'+flow,'flow',{client:q.client_id,redirect_uri:q.redirect_uri,challenge:q.code_challenge,state:q.state||'',scope:q.scope||c.scope||LEGACY_SCOPES,resource:q.resource||base+'/mcp'},600);
-        return html('<h1>Authorize TGA Gateway</h1><p>Client: <strong>'+escape(c.client_name)+'</strong></p><p>Return address: '+escape(q.redirect_uri)+'</p><p>Requested scopes: '+escape(q.scope||c.scope||LEGACY_SCOPES)+'</p><p>tga:hidden permits unlisted article pages. tga:files permits separate repository exports and bounded infrastructure metadata. tga:owner-send permits Buttondown delivery only to benjaminmoscovici@gmail.com. Public promotion is restricted to operator-enabled clients and EIC-approved verified editions. No subscriber sends or social posts.</p><form method="post" action="'+base+'/oauth/approve"><input type="hidden" name="flow" value="'+flow+'"><label>TGA owner authorization key<br><input name="owner_key" type="password" required autocomplete="off" style="width:100%;font-size:18px"></label><p><button type="submit">Authorize private access</button></p></form>');
+        return html('<h1>Authorize TGA Gateway</h1><p>Client: <strong>'+escape(c.client_name)+'</strong></p><p>Return address: '+escape(q.redirect_uri)+'</p><p>Requested scopes: '+escape(q.scope||c.scope||LEGACY_SCOPES)+'</p><p>tga:unpublish permits reversible withdrawal/restoration of your own articles. tga:purge permits permanent deletion of your own editorial records after a dry-run confirmation. Delivery history is retained. tga:hidden permits unlisted article pages. tga:files permits separate repository exports and bounded infrastructure metadata. tga:owner-send permits Buttondown delivery only to benjaminmoscovici@gmail.com. Public promotion is restricted to operator-enabled clients and EIC-approved verified editions. No subscriber sends or social posts.</p><form method="post" action="'+base+'/oauth/approve"><input type="hidden" name="flow" value="'+flow+'"><label>TGA owner authorization key<br><input name="owner_key" type="password" required autocomplete="off" style="width:100%;font-size:18px"></label><p><button type="submit">Authorize requested access</button></p></form>');
       }
       if(path==='/oauth/approve'&&req.method==='POST'){
         const raw=await req.text();must(raw.length<=8000,'request_too_large',413);const q=Object.fromEntries(new URLSearchParams(raw));
@@ -261,7 +290,7 @@ export function createGateway({store,providers,base,issuer=base,authorizationEnd
         else if(data.method==='ping')result={};
         else if(data.method==='tools/list')result={tools:visibleTools(who)};
         else if(data.method==='tools/call'){
-          const names={tga_status:'status',tga_submit_edition:'edition.submit',tga_submit_article:'article.submit',tga_get_draft:'draft.get',tga_read_articles:'articles.read',tga_list_social_channels:'social.channels',tga_create_newsletter_draft:'newsletter.draft',tga_create_social_draft:'social.draft',tga_get_receipt:'receipt.get',tga_publish_public_edition:'website.public',tga_verify_public_edition:'website.verify_public',tga_publish_hidden_edition:'website.hidden',tga_verify_hidden_edition:'website.verify_hidden',tga_send_owner_newsletter:'newsletter.send_owner',tga_inspect_infrastructure:'infrastructure.inspect',tga_read_workspace_file:'workspace.read',tga_export_workspace_file:'workspace.export'};
+          const names={tga_unpublish:'website.unpublish',tga_restore_publication:'website.restore',tga_delete_publication:'website.delete',tga_status:'status',tga_submit_edition:'edition.submit',tga_submit_article:'article.submit',tga_get_draft:'draft.get',tga_read_articles:'articles.read',tga_list_social_channels:'social.channels',tga_create_newsletter_draft:'newsletter.draft',tga_create_social_draft:'social.draft',tga_get_receipt:'receipt.get',tga_publish_public_edition:'website.public',tga_verify_public_edition:'website.verify_public',tga_publish_hidden_edition:'website.hidden',tga_verify_hidden_edition:'website.verify_hidden',tga_send_owner_newsletter:'newsletter.send_owner',tga_inspect_infrastructure:'infrastructure.inspect',tga_read_workspace_file:'workspace.read',tga_export_workspace_file:'workspace.export'};
           try{must(names[data.params?.name],'unknown_tool',404);const out=await operation(names[data.params.name],data.params.arguments||{},who);result={content:[{type:'text',text:JSON.stringify(out)}],isError:false};}
           catch(e){result={content:[{type:'text',text:JSON.stringify({error:e instanceof Failure?e.code:'operation_failed'})}],isError:true};}
         } else return json({jsonrpc:'2.0',id:data.id??null,error:{code:-32601,message:'Method not found'}});
@@ -274,4 +303,3 @@ export function createGateway({store,providers,base,issuer=base,authorizationEnd
     }
   };
 }
-

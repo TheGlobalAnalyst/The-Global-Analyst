@@ -52,18 +52,18 @@ export function providerAdapters(store,fetcher=fetch) {
       const draft=await this.draft('newsletter.draft',payload);
       const token=await key('buttondown');
       const saved=await external('https://api.buttondown.com/v1/emails/'+encodeURIComponent(draft.provider_id),token,undefined,'GET');
-      if(saved.status!=='draft'||saved.archival_mode!=='disabled'||saved.publish_date!==null||saved.subject!==payload.subject||readerBody(saved.body)!==readerBody(payload.body_html)||saved.metadata?.delivery_mode!=='tga_gateway_private_draft')throw new Failure('owner_draft_readback_mismatch',502);
+      if(saved.status!=='draft'||saved.archival_mode!=='disabled'||saved.publish_date!==null||saved.subject!==payload.subject||(payload.template&&saved.template!==payload.template)||readerBody(saved.body)!==readerBody(payload.body_html)||saved.metadata?.delivery_mode!=='tga_gateway_private_draft')throw new Failure('owner_draft_readback_mismatch',502);
       const acceptance=await external('https://api.buttondown.com/v1/emails/'+encodeURIComponent(draft.provider_id)+'/send-draft',token,{recipients:[OWNER]});
       return {...draft,status:'owner_send_accepted',recipient:OWNER,recipient_count:1,sent:true,provider_http_status:acceptance.http_status,inbox_delivery_verified:false,subscriber_send:false};
     },
     async draft(name,payload){
       if(name==='newsletter.draft'){
         const token=await key('buttondown');
-        const sent={subject:payload.subject,body:'<!-- buttondown-editor-mode: fancy -->\n'+payload.body_html,status:'draft',archival_mode:'disabled',publish_date:null,should_trigger_pay_per_email_billing:false,metadata:{delivery_mode:'tga_gateway_private_draft',content_sha256:await hash(payload)}};
+        const sent={subject:payload.subject,body:'<!-- buttondown-editor-mode: fancy -->\n'+payload.body_html,...(payload.template?{template:payload.template}:{}),status:'draft',archival_mode:'disabled',publish_date:null,should_trigger_pay_per_email_billing:false,metadata:{delivery_mode:'tga_gateway_private_draft',content_sha256:await hash(payload)}};
         const created=await external('https://api.buttondown.com/v1/emails',token,sent);
         if(typeof created.id!=='string'||!created.id)throw new Failure('buttondown_identity_missing',502);
         const read=await external('https://api.buttondown.com/v1/emails/'+encodeURIComponent(created.id),token,undefined,'GET');
-        if(read.id!==created.id||read.status!=='draft'||read.archival_mode!=='disabled'||read.publish_date!==null||read.subject!==payload.subject||readerBody(read.body)!==readerBody(payload.body_html))throw new Failure('buttondown_readback_mismatch',502);
+        if(read.id!==created.id||read.status!=='draft'||read.archival_mode!=='disabled'||read.publish_date!==null||read.subject!==payload.subject||(payload.template&&read.template!==payload.template)||readerBody(read.body)!==readerBody(payload.body_html))throw new Failure('buttondown_readback_mismatch',502);
         return {status:'private_draft',provider:'buttondown',provider_id:created.id,content_sha256:await hash(payload),sent:false,archival_mode:'disabled',readback_verified:true};
       }
       const data=await graph('mutation($input: CreatePostInput!) { createPost(input: $input) { ... on PostActionSuccess { post { id text status } } ... on MutationError { message } } }',

@@ -8,7 +8,16 @@ const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 
 // Derive email from the exact stored hidden edition. The client cannot supply
 // recipients, provider draft IDs, alternate destinations, or replacement copy.
-export function ownerNewsletter(hidden) {
+function newsletterHeadline(article) {
+  if (article.role !== 'analysis') return article.headline;
+  const genre = article.genre || /^(analysis|feature)(?:\s*[·:|—–-]|\s*$)/i.exec(article.topic_label || '')?.[1]?.toLowerCase();
+  if (!['analysis','feature'].includes(genre)) return article.headline;
+  const prefix = genre === 'feature' ? 'Feature' : 'Analysis';
+  const headline = article.headline.replace(/^\s*(?:(?:Analysis|Feature)\s*:\s*)+/i, '');
+  return prefix + ': ' + headline;
+}
+
+export function ownerNewsletter(hidden,{legacy=false}={}) {
   const {payload,receipt}=hidden;
   if(!payload?.articles?.length||receipt?.status!=='hidden_ready'||receipt.articles?.length!==payload.articles.length)throw new Failure('hidden_edition_required',409);
   // The sender already identifies the publication. Put the actual lead in the
@@ -17,15 +26,22 @@ export function ownerNewsletter(hidden) {
   const lead=payload.articles[0];
   if(/[\r\n]/.test(lead.headline))throw new Failure('newsletter_subject',409);
   const html=['<div hidden aria-hidden="true" style="display:none!important;visibility:hidden;mso-hide:all;max-height:0;max-width:0;opacity:0;overflow:hidden">'+escape(lead.teaser)+'</div>'];
+  if (!legacy) {
+    const date = new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'})
+      .format(new Date(payload.edition_date+'T00:00:00Z'));
+    html.push('<div style="font-family:Arial,sans-serif;color:#171717;max-width:640px;margin:0 auto;padding:24px 16px">');
+    html.push('<header><h1 style="margin:0;color:#000">The Sahel Brief</h1><p style="margin:8px 0 24px">'+escape(date)+'</p></header>');
+  }
   let section='';
   for(const [index,a] of payload.articles.entries()){
     const url=receipt.articles[index].article_url;
     if(!/^https:\/\/www\.theglobalanalyst\.com\/challenger\/v0-[a-f0-9]{24}$/.test(url))throw new Failure('hidden_article_url',409);
     const heading=a.role==='analysis'?'MORE':a.role==='also'?'ALSO IMPORTANT':'TOP STORIES';
     if(heading!==section){html.push('<h2 style="color:#000">'+heading+'</h2>');section=heading;}
-    html.push('<h3 style="color:#000">'+escape(a.headline)+'</h3><p>'+escape(a.teaser)+'</p><p><a href="'+url+'">Read the full report</a></p>');
+    html.push('<h3 style="color:#000">'+escape(legacy?a.headline:newsletterHeadline(a))+'</h3><p>'+escape(a.teaser)+'</p><p><a href="'+url+'">Read the full report</a></p>');
   }
-  return {subject:lead.headline,body_html:html.join('')};
+  if (!legacy) html.push('</div>');
+  return {subject:lead.headline,body_html:html.join(''),...(legacy?{}:{template:'naked'})};
 }
 
 // HTML parsing decodes entities once; do not erase punctuation, accents or
@@ -36,6 +52,8 @@ const nodes=node=>[node,...(node.childNodes||[]).flatMap(nodes)];
 const visibleText=node=>['script','style','template'].includes(node.tagName)||attr(node,'hidden')!==undefined?'':
   node.nodeName==='#text'?node.value:node.tagName==='br'?' ':(node.childNodes||[]).map(visibleText).join('');
 const hasClass=(node,name)=>(attr(node,'class')||'').split(/\s+/).includes(name);
+const matchesEditorialLabel=(article,content)=>article.editorial_topic_label===undefined||
+  normalizeText(visibleText(content.find(n=>hasClass(n,'kicker'))||{}))===normalizeText(article.editorial_topic_label);
 
 export async function verifyHidden(hidden,fetcher=fetch){
   if(!hidden?.receipt?.articles?.length||hidden.receipt.articles.length!==hidden.payload?.articles?.length)throw new Failure('hidden_article_readback_mismatch',424);
@@ -56,7 +74,7 @@ export async function verifyHidden(hidden,fetcher=fetch){
       (attr(n,'content')||'').toLowerCase().split(/[\s,]+/).includes('noindex'));
     const expectedBodies=[expected.body_markdown,expected.body_markdown.replace(/^(?:News|Analysis|Feature|Explainer)\s*\n+/,'')]
       .map(markdown=>normalizeText(visibleText(parse(marked.parse(markdown)))));
-    if(articles.length!==1||attr(article,'data-content-sha256')!==a.content_sha256||
+    if(articles.length!==1||!matchesEditorialLabel(expected,content)||attr(article,'data-content-sha256')!==a.content_sha256||
       await hash(expected.body_markdown)!==a.content_sha256||
       headings.length!==1||normalizeText(visibleText(headings[0]))!==normalizeText(expected.headline)||
       standfirsts.length!==1||normalizeText(visibleText(standfirsts[0]))!==normalizeText(expected.teaser)||
@@ -84,7 +102,7 @@ export async function verifyPublic(saved,fetcher=fetch){
     const expectedBody=expected.body_markdown.replace(/^(?:News|Analysis|Feature|Explainer)\s*\n+/,'');
     const expectedText=normalizeText(visibleText(parse(marked.parse(expectedBody))));
     if(normalizeText(visibleText(body||{}))!==expectedText)throw new Failure('public_body_mismatch',424);
-    if(attr(article||{},'data-content-sha256')!==a.content_sha256||await hash(expected.body_markdown)!==a.content_sha256||
+    if(!matchesEditorialLabel(expected,content)||attr(article||{},'data-content-sha256')!==a.content_sha256||await hash(expected.body_markdown)!==a.content_sha256||
       normalizeText(visibleText(headline||{}))!==normalizeText(expected.headline)||
       normalizeText(visibleText(teaser||{}))!==normalizeText(expected.teaser)||
       !links.has('/authors/'+a.author_role_slug)||!expected.sources.every(s=>links.has(s.url))||
