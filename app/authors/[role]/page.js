@@ -2,7 +2,7 @@ import {editorialTopicLabel} from '../../../lib/story-presentation.mjs';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getPublishedArticles } from '../../../lib/publication-source';
+import { getPublicListings } from '../../../lib/publication-source';
 import { articlesForProfile, getEditorialProfile } from '../../../lib/editorial-team.mjs';
 import styles from './page.module.css';
 
@@ -23,7 +23,7 @@ export default async function AuthorPage({ params, searchParams }) {
   const profile = getEditorialProfile(role);
   if (!profile) notFound();
 
-  const stories = articlesForProfile(await getPublishedArticles(), profile);
+  const stories = articlesForProfile(await getPublicListings(), profile);
   const query = await searchParams;
   const requested = Number(query?.page || 1);
   const pageCount = Math.max(1, Math.ceil(stories.length / 20));

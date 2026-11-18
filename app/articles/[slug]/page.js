@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import StoryMeta from '../../../components/StoryMeta';
-import { getArticleBySlug, getPublishedArticles } from '../../../lib/publication-source';
+import { getArticleBySlug, getPublicListings } from '../../../lib/publication-source';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,9 +23,10 @@ export default async function ArticlePage({params}){
   const story = await getArticleBySlug(slug);
   if(!story) notFound();
 
-  const all = await getPublishedArticles();
-  const related = (story.related_content || [])
-    .map(s => all.find(a => a.slug === s || a.canonical_key === s))
+  const relatedKeys = (story.related_content || []);
+  const listings = relatedKeys.length ? await getPublicListings() : [];
+  const related = relatedKeys
+    .map(s => listings.find(a => a.slug === s || a.canonical_key === s))
     .filter(Boolean)
     .slice(0,3);
 

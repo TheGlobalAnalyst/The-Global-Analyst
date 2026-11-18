@@ -1,9 +1,9 @@
-import { getPublishedArticles } from '../lib/publication-source';
+import { getPublicListings } from '../lib/publication-source';
 
 export const dynamic='force-dynamic';
 
 export default async function sitemap(){
-  const articles = await getPublishedArticles();
+  const articles = await getPublicListings();
   return [
     {url:'https://www.theglobalanalyst.com',lastModified:new Date()},
     {url:'https://www.theglobalanalyst.com/newsletters',lastModified:new Date()},
