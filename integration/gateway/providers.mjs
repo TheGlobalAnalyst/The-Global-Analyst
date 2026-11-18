@@ -10,7 +10,7 @@ export function providerAdapters(store,fetcher=fetch) {
     if(!r.ok||result.errors?.length)throw new Failure('provider_request_rejected',502);return result;
   }
   async function graph(query,variables={}){return (await external('https://api.buffer.com',await key('buffer'),{query,variables})).data;}
-  async function channel(id){const data=await graph('query($id: ChannelId!) { channel(input: { id: $id }) { id name service } }',{id});return data.channel;}
+  async function channel(id){const data=await graph('query($id: ChannelId!) { channel(input: { id: $id }) { id name displayName service externalLink isDisconnected isLocked } }',{id});return data?.channel;}
   const readerBody=s=>(s||'').replace(/^<!-- buttondown-editor-mode: fancy -->\r?\n?/,'').replace(/[\r\n]+$/,'');
   return {
     async status(){return {buttondown:!!(await store.provider('buttondown')),buffer:!!(await store.provider('buffer')),buffer_channel_allowlist:!!(await store.get('config:buffer:channels')),github:!!(await store.provider('github')),gitlab:!!(await store.provider('gitlab')),vercel:!!(await store.provider('vercel'))};},
@@ -35,7 +35,7 @@ export function providerAdapters(store,fetcher=fetch) {
       if(!Array.isArray(orgs))throw new Failure('buffer_account_readback',502);
       const channels=[];
       for(const org of orgs.slice(0,5)){
-        const result=await graph('query($id: OrganizationId!) { channels(input: { organizationId: $id }) { id name service } }',{id:org.id});
+        const result=await graph('query($id: OrganizationId!) { channels(input: { organizationId: $id }) { id name displayName service externalLink isDisconnected isLocked } }',{id:org.id});
         for(const c of (result.channels||[]).slice(0,40))if(['twitter','linkedin'].includes(c.service))channels.push({...c,organization:org.name});
       }
       return {channels,publication_enabled:false};
@@ -46,7 +46,7 @@ export function providerAdapters(store,fetcher=fetch) {
       }
       await key('buffer');const row=await store.get('config:buffer:channels');
       if(row?.value?.[payload.service]!==payload.channel_id)throw new Failure('buffer_channel_not_allowlisted',403);
-      const c=await channel(payload.channel_id);if(c?.id!==payload.channel_id||c.service!==payload.service)throw new Failure('buffer_channel_mismatch',403);
+      const c=await channel(payload.channel_id);if(c?.id!==payload.channel_id||c.service!==payload.service||c.isDisconnected!==false||c.isLocked!==false)throw new Failure('buffer_channel_mismatch',403);
     },
     async sendOwner(payload){
       const draft=await this.draft('newsletter.draft',payload);
@@ -66,11 +66,20 @@ export function providerAdapters(store,fetcher=fetch) {
         if(read.id!==created.id||read.status!=='draft'||read.archival_mode!=='disabled'||read.publish_date!==null||read.subject!==payload.subject||(payload.template&&read.template!==payload.template)||readerBody(read.body)!==readerBody(payload.body_html))throw new Failure('buttondown_readback_mismatch',502);
         return {status:'private_draft',provider:'buttondown',provider_id:created.id,content_sha256:await hash(payload),sent:false,archival_mode:'disabled',readback_verified:true};
       }
-      const data=await graph('mutation($input: CreatePostInput!) { createPost(input: $input) { ... on PostActionSuccess { post { id text status } } ... on MutationError { message } } }',
+      if(name!=='social.draft')throw new Failure('unknown_operation',404);
+      const data=await graph('mutation($input: CreatePostInput!) { createPost(input: $input) { ... on PostActionSuccess { post { id } } ... on MutationError { message } } }',
         {input:{channelId:payload.channel_id,text:payload.text,schedulingType:'automatic',mode:'addToQueue',saveToDraft:true}});
-      const post=data?.createPost?.post;
-      if(!post?.id||post.text!==payload.text||post.status!=='draft')throw new Failure('buffer_draft_readback_mismatch',502);
-      return {status:'private_draft',provider:'buffer',provider_id:post.id,service:payload.service,channel_id:payload.channel_id,content_sha256:await hash(payload),posted:false,scheduled:false,saveToDraft:true,readback_verified:true};
+      const id=data?.createPost?.post?.id;
+      if(typeof id!=='string'||!id)throw new Failure('buffer_draft_creation_unconfirmed',502);
+      const outcome={provider:'buffer',provider_id:id,service:payload.service,channel_id:payload.channel_id,content_sha256:await hash(payload)};
+      try {
+        const post=(await graph('query($id: PostId!) { post(input: { id: $id }) { id text status channelId channelService } }',{id}))?.post;
+        if(post?.id===id&&post.text===payload.text&&post.status==='draft'&&post.channelId===payload.channel_id&&post.channelService===payload.service)
+          return {...outcome,status:'private_draft',posted:false,scheduled:false,saveToDraft:true,readback_verified:true};
+      } catch {
+        // The mutation returned an ID. Preserve it for operator reconciliation.
+      }
+      return {...outcome,status:'outcome_unknown',automatic_retry:false,readback_verified:false,error:'buffer_draft_readback_unconfirmed'};
     },
   };
 }

@@ -61,7 +61,7 @@ export const TOOLS=[
   ['tga_read_articles','Read at most 20 approved published TGA articles. No SQL or private checkpoints.',obj({limit:{type:'integer',minimum:1,maximum:20}},[])],
   ['tga_list_social_channels','Read connected Buffer X and LinkedIn channel IDs. This does not authorize their use.',obj()],
   ['tga_create_newsletter_draft','Create a non-archived Buttondown draft. Never sends to anyone.',obj({idempotency_key:str,payload:obj({subject:str,body_html:str})})],
-  ['tga_create_social_draft','Create a Buffer draft for an allowed X or LinkedIn channel. Never queues, schedules or posts.',obj({idempotency_key:str,payload:obj({channel_id:str,service:{enum:['twitter','linkedin']},text:str})})],
+  ['tga_create_social_draft','Create a private Buffer draft from exact EIC-approved copy for an allowed X or LinkedIn channel. Never queues, schedules or posts.',obj({idempotency_key:str,payload:obj({channel_id:str,service:{enum:['twitter','linkedin']},text:str,eic_approved:{type:'boolean',const:true}})})],
   ['tga_publish_hidden_edition','Make your stored edition readable at unlisted TGA article URLs. Requires tga:hidden. Not access-controlled; never enters public feeds.',obj({idempotency_key:str,payload:obj({draft_key:str})})],
   ['tga_publish_public_edition','Promote an EIC-approved, verified hidden edition with explicit writing-agent provenance. Only operator-enabled clients. dry_run validates without publication.',obj({idempotency_key:str,payload:obj({hidden_key:str,eic_approved:{type:'boolean',const:true},authors:{type:'array',minItems:1,maxItems:15,items:authorSchema},geography_labels:{type:'array',minItems:1,maxItems:15,items:{type:'string',minLength:1,maxLength:80}},dry_run:{type:'boolean'}},['hidden_key','eic_approved','authors','geography_labels'])})],
   ['tga_verify_public_edition','Verify promoted public article content, authorship and disclosure.',obj({idempotency_key:str})],
@@ -84,6 +84,13 @@ export function createGateway({store,providers,base,issuer=base,authorizationEnd
   const read=async req=>{const raw=await req.text();must(new TextEncoder().encode(raw).length<=1100000,'request_too_large',413);try{return JSON.parse(raw);}catch{throw new Failure('invalid_json');}};
   const fresh=async key=>{const row=await store.get(key);if(!row||row.expires_at&&Date.parse(row.expires_at)<=now())return null;return row.value;};
   const put=(key,kind,value,seconds)=>store.insert({key,kind,value,expires_at:seconds?expiry(seconds):null});
+  const unknownOutcome={status:'outcome_unknown',automatic_retry:false};
+  async function socialReceipt(key,client){
+    const record=await fresh(key);
+    if(!record)return unknownOutcome;
+    if(record.client!==client)return {status:'duplicate_draft_request',automatic_retry:false};
+    return record.receipt||unknownOutcome;
+  }
   const requireOperator=async token=>{const op=await fresh('operator:owner');must(op&&op.hash===await hash(token||''),'operator_authentication_required',401);};
   const identity=async req=>{
     const header=req.headers.get('authorization')||'';must(header.startsWith('Bearer '),'unauthorized',401);
@@ -116,7 +123,7 @@ export function createGateway({store,providers,base,issuer=base,authorizationEnd
     }
     const key=operationKey(who.client,args.idempotency_key);
     if(name==='draft.get'){const x=await fresh('edition:'+key);must(x&&x.client===who.client,'not_found',404);return x;}
-    if(name==='receipt.get'){const x=await fresh(key);must(x&&x.client===who.client,'not_found',404);return x.receipt||{status:'outcome_unknown',automatic_retry:false};}
+    if(name==='receipt.get'){const x=await fresh(key);must(x&&x.client===who.client,'not_found',404);return x.social_draft_key?socialReceipt(x.social_draft_key,who.client):x.receipt||unknownOutcome;}
     if(['website.unpublish','website.restore','website.delete'].includes(name)){
       const action=name.split('.')[1];requireScope(action==='delete'?'tga:purge':'tga:unpublish');
       exact(args.payload,['hidden_key','article_slug','draft_key','dry_run','confirm_delete','expected_revision']);
@@ -185,12 +192,38 @@ export function createGateway({store,providers,base,issuer=base,authorizationEnd
     }
     else if(name==='workspace.export'){exact(input,['provider','path','content']);text(input.path,180);text(input.content,200000);}
     else if(name==='newsletter.draft'){exact(input,['subject','body_html']);text(input.subject,240);text(input.body_html,300000);}
-    else {exact(input,['channel_id','service','text']);text(input.channel_id,100);text(input.text,input.service==='twitter'?280:3000);must(['twitter','linkedin'].includes(input.service),'service');}
+    else {
+      exact(input,['channel_id','service','text','eic_approved']);
+      must(input.eic_approved===true,'eic_approval_required',403);
+      const {channel_id,service,text:copy}=input;
+      text(channel_id,100);must(['twitter','linkedin'].includes(service),'service');text(copy,service==='twitter'?280:3000);
+      input={channel_id,service,text:copy};
+    }
     // Retain the original owner-send fingerprint for receipt replay and rollback.
     const identity=hidden?{...ownerNewsletter(hidden,{legacy:true}),hidden_key:hiddenId}:input;
     const digest=await hash({name,payload:identity});
     const previous=await fresh(key);
-    if(previous){must(previous.hash===digest,'idempotency_conflict',409);return previous.receipt||{status:'outcome_unknown',automatic_retry:false};}
+    if(previous){
+      must(previous.hash===digest,'idempotency_conflict',409);
+      return previous.social_draft_key?socialReceipt(previous.social_draft_key,who.client):previous.receipt||unknownOutcome;
+    }
+    if(name==='social.draft'){
+      const socialKey='buffer-draft:'+digest;
+      const existing=await fresh(socialKey);
+      if(!existing)await providers.preflight(name,input);
+      const pending={client:who.client,hash:digest,status:'pending',social_draft_key:socialKey};
+      if(!await put(key,'operation',pending)){
+        const concurrent=await fresh(key);
+        must(concurrent?.hash===digest,'idempotency_conflict',409);
+        return concurrent.social_draft_key?socialReceipt(concurrent.social_draft_key,who.client):concurrent.receipt||unknownOutcome;
+      }
+      if(existing||!await put(socialKey,'operation',{client:who.client,status:'pending'}))return socialReceipt(socialKey,who.client);
+      let receipt;
+      try{receipt=await providers.draft(name,input);}
+      catch(e){receipt={...unknownOutcome,error:e instanceof Failure?e.code:'provider_request_failed'};}
+      await store.replace(socialKey,{client:who.client,receipt});
+      return receipt;
+    }
     // Check credentials and channel ownership before reserving a non-retryable external action.
     if(hidden){
       const delivery=await fresh(deliveryKey);
