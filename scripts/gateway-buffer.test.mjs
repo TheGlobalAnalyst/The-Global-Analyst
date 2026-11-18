@@ -51,7 +51,7 @@ async function fixture({createTimeout=false,readbackMismatch=false,disconnected=
   }
   const draft=(key,service='twitter',extra={})=>call('social.draft',key,{channel_id:channels[service],service,text:copy,eic_approved:true,...extra});
   const receipt=key=>call('receipt.get',key);
-  return {created,reads,draft,receipt,call};
+  return {created,reads,draft,receipt,call,rows};
 }
 
 test('approved copy is read back exactly as a private draft on each channel; retries and concurrent aliases deduplicate',async()=>{
@@ -95,4 +95,16 @@ test('a timeout or unsafe readback preserves one attempt and blocks a second mut
     assert.deepEqual(await draft('uncertain-new-key'),first);
     assert.equal(created.length,1);
   }
+});
+
+test('the cached tool schema can use a preapproved key for the exact platform and copy only',async()=>{
+  const {draft,rows,created}=await fixture();
+  const key='x-preapproved';
+  const payload={channel_id:channels.twitter,service:'twitter',text:copy};
+  rows.set('buffer-approval:'+key,{value:{digest:await hash({name:'social.draft',payload})}});
+  assert.equal((await draft(key,'twitter',{eic_approved:undefined,text:copy+' changed'})).status,403);
+  assert.equal((await draft(key,'linkedin',{eic_approved:undefined})).status,403);
+  assert.equal((await draft(key,'twitter',{eic_approved:undefined})).body.status,'private_draft');
+  assert.equal((await draft(key,'twitter',{eic_approved:undefined})).body.status,'private_draft');
+  assert.equal(created.length,1);
 });

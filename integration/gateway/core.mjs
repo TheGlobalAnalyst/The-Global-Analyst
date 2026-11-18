@@ -61,7 +61,7 @@ export const TOOLS=[
   ['tga_read_articles','Read at most 20 approved published TGA articles. No SQL or private checkpoints.',obj({limit:{type:'integer',minimum:1,maximum:20}},[])],
   ['tga_list_social_channels','Read connected Buffer X and LinkedIn channel IDs. This does not authorize their use.',obj()],
   ['tga_create_newsletter_draft','Create a non-archived Buttondown draft. Never sends to anyone.',obj({idempotency_key:str,payload:obj({subject:str,body_html:str})})],
-  ['tga_create_social_draft','Create a private Buffer draft from exact EIC-approved copy for an allowed X or LinkedIn channel. Never queues, schedules or posts.',obj({idempotency_key:str,payload:obj({channel_id:str,service:{enum:['twitter','linkedin']},text:str,eic_approved:{type:'boolean',const:true}})})],
+  ['tga_create_social_draft','Create a private Buffer draft from exact EIC-approved copy for an allowed X or LinkedIn channel. Never queues, schedules or posts.',obj({idempotency_key:str,payload:obj({channel_id:str,service:{enum:['twitter','linkedin']},text:str,eic_approved:{type:'boolean',const:true}},['channel_id','service','text'])})],
   ['tga_publish_hidden_edition','Make your stored edition readable at unlisted TGA article URLs. Requires tga:hidden. Not access-controlled; never enters public feeds.',obj({idempotency_key:str,payload:obj({draft_key:str})})],
   ['tga_publish_public_edition','Promote an EIC-approved, verified hidden edition with explicit writing-agent provenance. Only operator-enabled clients. dry_run validates without publication.',obj({idempotency_key:str,payload:obj({hidden_key:str,eic_approved:{type:'boolean',const:true},authors:{type:'array',minItems:1,maxItems:15,items:authorSchema},geography_labels:{type:'array',minItems:1,maxItems:15,items:{type:'string',minLength:1,maxLength:80}},dry_run:{type:'boolean'}},['hidden_key','eic_approved','authors','geography_labels'])})],
   ['tga_verify_public_edition','Verify promoted public article content, authorship and disclosure.',obj({idempotency_key:str})],
@@ -181,7 +181,7 @@ export function createGateway({store,providers,base,issuer=base,authorizationEnd
     }
     must(['newsletter.draft','social.draft','newsletter.send_owner','workspace.export'].includes(name),'unknown_operation',404);
     let input=args.payload;
-    let hidden,deliveryKey,hiddenId;
+    let hidden,deliveryKey,hiddenId,socialApproved;
     if(name==='newsletter.send_owner'){
       exact(input,['hidden_key']);
       hidden=await fresh('hidden:'+operationKey(who.client,input.hidden_key));
@@ -194,7 +194,7 @@ export function createGateway({store,providers,base,issuer=base,authorizationEnd
     else if(name==='newsletter.draft'){exact(input,['subject','body_html']);text(input.subject,240);text(input.body_html,300000);}
     else {
       exact(input,['channel_id','service','text','eic_approved']);
-      must(input.eic_approved===true,'eic_approval_required',403);
+      socialApproved=input.eic_approved===true;
       const {channel_id,service,text:copy}=input;
       text(channel_id,100);must(['twitter','linkedin'].includes(service),'service');text(copy,service==='twitter'?280:3000);
       input={channel_id,service,text:copy};
@@ -202,6 +202,10 @@ export function createGateway({store,providers,base,issuer=base,authorizationEnd
     // Retain the original owner-send fingerprint for receipt replay and rollback.
     const identity=hidden?{...ownerNewsletter(hidden,{legacy:true}),hidden_key:hiddenId}:input;
     const digest=await hash({name,payload:identity});
+    if(name==='social.draft'&&!socialApproved){
+      const approval=await fresh('buffer-approval:'+args.idempotency_key);
+      must(approval?.digest===digest,'eic_approval_required',403);
+    }
     const previous=await fresh(key);
     if(previous){
       must(previous.hash===digest,'idempotency_conflict',409);
