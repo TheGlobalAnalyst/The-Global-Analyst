@@ -30,15 +30,19 @@ export function ownerNewsletter(hidden,{legacy=false}={}) {
     const date = new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'})
       .format(new Date(payload.edition_date+'T00:00:00Z'));
     html.push('<div style="font-family:Arial,sans-serif;color:#171717;max-width:640px;margin:0 auto;padding:24px 16px">');
-    html.push('<header><h1 style="margin:0;color:#000">The Sahel Brief</h1><p style="margin:8px 0 24px">'+escape(date)+'</p></header>');
+    html.push('<div style="text-align:center">'+
+      '<img src="'+WEBSITE+'/logo.png" alt="The Global Analyst" width="72" height="72" style="display:block;margin:0 auto 12px;border:0">'+
+      '<h1 style="margin:0;color:#000;font-size:24px">The Sahel Brief</h1>'+
+      '<p style="margin:8px 0 24px">'+escape(date)+'</p></div>');
   }
+  const linkStyle=legacy?'':' style="color:#d90000;text-decoration:underline"';
   let section='';
   for(const [index,a] of payload.articles.entries()){
     const url=receipt.articles[index].article_url;
     if(!/^https:\/\/www\.theglobalanalyst\.com\/challenger\/v0-[a-f0-9]{24}$/.test(url))throw new Failure('hidden_article_url',409);
     const heading=a.role==='analysis'?'MORE':a.role==='also'?'ALSO IMPORTANT':'TOP STORIES';
     if(heading!==section){html.push('<h2 style="color:#000">'+heading+'</h2>');section=heading;}
-    html.push('<h3 style="color:#000">'+escape(legacy?a.headline:newsletterHeadline(a))+'</h3><p>'+escape(a.teaser)+'</p><p><a href="'+url+'">Read the full report</a></p>');
+    html.push('<h3 style="color:#000">'+escape(legacy?a.headline:newsletterHeadline(a))+'</h3><p>'+escape(a.teaser)+'</p><p><a href="'+url+'"'+linkStyle+'>Read the full report</a></p>');
   }
   if (!legacy) html.push('</div>');
   return {subject:lead.headline,body_html:html.join(''),...(legacy?{}:{template:'naked'})};
