@@ -8,3 +8,14 @@ test('only expressly promoted, approved, credited Hyperagent rows appear',()=>{
   for(const [key,value] of [['feed_visible',false],['visibility','unlisted'],['verification_state','unverified'],['author_role_slug','general-analyst'],['origin','scheduled_v2']]){const r=row();r.article[key]=value;assert.equal(approvedHARows([r]).length,0,key);}
 });
 test('story label avoids generic News/Analysis labels',()=>{assert.equal(storyLabel({headline:'Fuel shortage strands Sudan’s aid trucks',topic_label:'News'}),'Sudan');assert.equal(storyLabel({headline:'Aid faces delays',topic_label:'News'}),'Sahel');});
+
+test('historical Feature whose projection lost genre uses its approved format on detail and listing',()=>{
+  const legacy=row();
+  Object.assign(legacy.article,{id:'gateway-v0-879bbf7dd8874686921604b9',editorial_role:'analysis',topic_label:'Mali'});
+  for (const listing of [false,true]) {
+    const [story]=approvedHARows([{...legacy,body_present:true,body_words:5}],{listing});
+    assert.equal(story.website_section,'Feature');
+    assert.equal(story.headline,legacy.article.headline);
+  }
+  assert.equal(approvedHARows([{...legacy,article:{...legacy.article,id:'other'}}])[0].website_section,'Analysis');
+});

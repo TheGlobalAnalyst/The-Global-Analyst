@@ -118,7 +118,11 @@ export function createGateway({store,providers,base,issuer=base,authorizationEnd
     if(['status','articles.read','social.channels','draft.get','receipt.get'].includes(name))requireScope('tga:read');
     if(['edition.submit','article.submit','newsletter.draft','social.draft'].includes(name))requireScope('tga:drafts');
     if(name==='status')return {...CONTRACT,providers:await providers.status()};
-    if(name==='articles.read')return store.articles(Math.max(1,Math.min(20,Number.isInteger(args.limit)?args.limit:10)));
+    if(name==='articles.read'){
+      const rows=await store.articles(Math.max(1,Math.min(20,Number.isInteger(args.limit)?args.limit:10)));
+      return rows.map(row=>row.article?.origin==='tga_gateway' ? {...row,article:{...row.article,
+        editorial_role:placement(row.article.editorial_role),genre:articleGenre(row.article)}} : row);
+    }
     if(name==='social.channels')return providers.channels();
     if(name==='website.hidden'||name==='website.verify_hidden')requireScope('tga:hidden');
     if(name==='newsletter.send_owner')requireScope('tga:owner-send');
