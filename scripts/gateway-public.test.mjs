@@ -33,3 +33,16 @@ test('public verification rejects a page with correct hash marker but altered bo
  assert.equal((await verifyPublic(saved,async()=>new Response(html('Exact approved copy')))).status,'public_content_verified');
  await assert.rejects(()=>verifyPublic(saved,async()=>new Response(html('Altered text'))),/public_body_mismatch/);
 });
+
+test('hidden and public readback require the approved genre separately from the headline and topic',async()=>{
+ const article={role:'more',genre:'background',headline:'A title',teaser:'A teaser',body_markdown:'Approved body',editorial_topic_label:'Trade',sources:[{url:'https://example.org/source'}]};
+ const slug='v0-'+'a'.repeat(24),content_sha256=await hash(article.body_markdown);
+ for(const hidden of [true,false]){
+   const receipt={status:hidden?'hidden_ready':'public_ready',articles:[{slug,content_sha256,author_role_slug:'economic-analyst',article_url:'https://www.theglobalanalyst.com/'+(hidden?'challenger':'articles')+'/'+slug}]};
+   const html=(hidden?'<meta name="robots" content="noindex">':'')+`<article data-content-sha256="${content_sha256}"><div class="kicker">Trade</div><div class="articleGenre">Background</div><h1>A title</h1><p class="standfirst">A teaser</p><div class="articleBody">Approved body</div><a href="https://example.org/source">Evidence</a><a href="/authors/economic-analyst">Economics &amp; Livelihoods Analyst</a><p>Produced by The Global Analyst’s AI-powered newsroom.</p></article>`;
+   const verify=raw=>(hidden?verifyHidden:verifyPublic)({payload:{articles:[article]},receipt},async()=>new Response(raw));
+   assert.equal((await verify(html)).article_count,1);
+   await assert.rejects(()=>verify(html.replace('>Background<','>Feature<')),/readback_mismatch/);
+   await assert.rejects(()=>verify(html.replace('>A title<','>Background: A title<')),/readback_mismatch/);
+ }
+});

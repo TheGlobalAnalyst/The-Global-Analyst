@@ -58,7 +58,7 @@ export default async function AuthorPage({ params, searchParams }) {
 
         {visible.length ? visible.map((story) => (
           <article className={styles.story} key={story.canonical_key}>
-            <div className="kicker">{editorialTopicLabel(story) || story.website_section}</div>
+            <div className="kicker">{[story.website_section, editorialTopicLabel(story)].filter(Boolean).join(' · ')}</div>
             <h3><Link href={`/articles/${story.slug}`}>{story.headline}</Link></h3>
             <p>{story.teaser}</p>
             <div className={styles.date}>

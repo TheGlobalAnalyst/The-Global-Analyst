@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import {articleGenre, genreLabels} from '../../../integration/gateway/editorial.mjs';
 import {storyLabel,AI_DISCLOSURE} from '../../../lib/story-presentation.mjs';
 import StoryMeta from '../../../components/StoryMeta';
 import {notFound} from 'next/navigation';
@@ -26,6 +26,7 @@ export default async function ChallengerArticle({params}) {
  const body=v1?withoutInlineSources(a.body_markdown):a.body_markdown;
  return <main className="container"><article className="article" data-content-sha256={data.content_sha256}>
   <div className="kicker">{storyLabel(a)}</div>
+  {a.origin==='tga_gateway' && <div className="articleGenre">{genreLabels[articleGenre(a)]}</div>}
   <h1>{a.headline}</h1><div className="standfirst"><ReactMarkdown>{teaser}</ReactMarkdown></div>
   {a.author_role && <StoryMeta story={{...a,published_at:a.edition_date}}/>}
   <div className="articleBody"><ReactMarkdown>{body.replace(/^(?:News|Analysis|Feature|Explainer)\s*\n+/,'')}</ReactMarkdown></div>

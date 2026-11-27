@@ -1,6 +1,7 @@
 import {Failure,hash} from './core.mjs';
 import {parse} from 'parse5';
 import {marked} from 'marked';
+import {placement, articleGenre, genreLabels} from './editorial.mjs';
 
 export const OWNER='benjaminmoscovici@gmail.com';
 export const WEBSITE='https://www.theglobalanalyst.com';
@@ -8,15 +9,6 @@ const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 
 // Derive email from the exact stored hidden edition. The client cannot supply
 // recipients, provider draft IDs, alternate destinations, or replacement copy.
-function newsletterHeadline(article) {
-  if (article.role !== 'analysis') return article.headline;
-  const genre = article.genre || /^(analysis|feature)(?:\s*[·:|—–-]|\s*$)/i.exec(article.topic_label || '')?.[1]?.toLowerCase();
-  if (!['analysis','feature'].includes(genre)) return article.headline;
-  const prefix = genre === 'feature' ? 'Feature' : 'Analysis';
-  const headline = article.headline.replace(/^\s*(?:(?:Analysis|Feature)\s*:\s*)+/i, '');
-  return prefix + ': ' + headline;
-}
-
 export function ownerNewsletter(hidden,{legacy=false}={}) {
   const {payload,receipt}=hidden;
   if(!payload?.articles?.length||receipt?.status!=='hidden_ready'||receipt.articles?.length!==payload.articles.length)throw new Failure('hidden_edition_required',409);
@@ -40,9 +32,10 @@ export function ownerNewsletter(hidden,{legacy=false}={}) {
   for(const [index,a] of payload.articles.entries()){
     const url=receipt.articles[index].article_url;
     if(!/^https:\/\/www\.theglobalanalyst\.com\/challenger\/v0-[a-f0-9]{24}$/.test(url))throw new Failure('hidden_article_url',409);
-    const heading=a.role==='analysis'?'MORE':a.role==='also'?'ALSO IMPORTANT':'TOP STORIES';
+    const heading=placement(a.role)==='more'?'MORE':a.role==='also'?'ALSO IMPORTANT':'TOP STORIES';
     if(heading!==section){html.push('<h2 style="color:#000">'+heading+'</h2>');section=heading;}
-    html.push('<h3 style="color:#000">'+escape(legacy?a.headline:newsletterHeadline(a))+'</h3><p>'+escape(a.teaser)+'</p><p><a href="'+url+'"'+linkStyle+'>Read the full report</a></p>');
+    if (!legacy && heading==='MORE') html.push('<p class="articleGenre">'+genreLabels[articleGenre(a)]+'</p>');
+    html.push('<h3 style="color:#000">'+escape(a.headline)+'</h3><p>'+escape(a.teaser)+'</p><p><a href="'+url+'"'+linkStyle+'>Read the full report</a></p>');
   }
   if (!legacy) html.push('</div>');
   return {subject:lead.headline,body_html:html.join(''),...(legacy?{}:{template:'naked'})};
@@ -58,6 +51,12 @@ const visibleText=node=>['script','style','template'].includes(node.tagName)||at
 const hasClass=(node,name)=>(attr(node,'class')||'').split(/\s+/).includes(name);
 const matchesEditorialLabel=(article,content)=>article.editorial_topic_label===undefined||
   normalizeText(visibleText(content.find(n=>hasClass(n,'kicker'))||{}))===normalizeText(article.editorial_topic_label);
+
+function matchesGenre(article,content) {
+  if (!article.role) return true;
+  const labels = content.filter(n=>hasClass(n,'articleGenre'));
+  return labels.length===1 && normalizeText(visibleText(labels[0]))===genreLabels[articleGenre(article)];
+}
 
 export async function verifyHidden(hidden,fetcher=fetch){
   if(!hidden?.receipt?.articles?.length||hidden.receipt.articles.length!==hidden.payload?.articles?.length)throw new Failure('hidden_article_readback_mismatch',424);
@@ -78,7 +77,7 @@ export async function verifyHidden(hidden,fetcher=fetch){
       (attr(n,'content')||'').toLowerCase().split(/[\s,]+/).includes('noindex'));
     const expectedBodies=[expected.body_markdown,expected.body_markdown.replace(/^(?:News|Analysis|Feature|Explainer)\s*\n+/,'')]
       .map(markdown=>normalizeText(visibleText(parse(marked.parse(markdown)))));
-    if(articles.length!==1||!matchesEditorialLabel(expected,content)||attr(article,'data-content-sha256')!==a.content_sha256||
+    if(articles.length!==1||!matchesGenre(expected,content)||!matchesEditorialLabel(expected,content)||attr(article,'data-content-sha256')!==a.content_sha256||
       await hash(expected.body_markdown)!==a.content_sha256||
       headings.length!==1||normalizeText(visibleText(headings[0]))!==normalizeText(expected.headline)||
       standfirsts.length!==1||normalizeText(visibleText(standfirsts[0]))!==normalizeText(expected.teaser)||
@@ -106,7 +105,7 @@ export async function verifyPublic(saved,fetcher=fetch){
     const expectedBody=expected.body_markdown.replace(/^(?:News|Analysis|Feature|Explainer)\s*\n+/,'');
     const expectedText=normalizeText(visibleText(parse(marked.parse(expectedBody))));
     if(normalizeText(visibleText(body||{}))!==expectedText)throw new Failure('public_body_mismatch',424);
-    if(!matchesEditorialLabel(expected,content)||attr(article||{},'data-content-sha256')!==a.content_sha256||await hash(expected.body_markdown)!==a.content_sha256||
+    if(!matchesGenre(expected,content)||!matchesEditorialLabel(expected,content)||attr(article||{},'data-content-sha256')!==a.content_sha256||await hash(expected.body_markdown)!==a.content_sha256||
       normalizeText(visibleText(headline||{}))!==normalizeText(expected.headline)||
       normalizeText(visibleText(teaser||{}))!==normalizeText(expected.teaser)||
       !links.has('/authors/'+a.author_role_slug)||!expected.sources.every(s=>links.has(s.url))||

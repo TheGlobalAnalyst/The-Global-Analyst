@@ -48,13 +48,13 @@ export default async function Home(){
         </div>
       </section>
 
-      <section className="section" id="analysis">
+      {analysis.length > 0 && <section className="section" id="analysis">
         <div className="container">
-          <div className="sectionHeader"><h2 className="sectionTitle">Analysis</h2></div>
+          <div className="sectionHeader"><h2 className="sectionTitle">More</h2></div>
           <div className="analysisGrid">
             {analysis.map(story => (
               <article className="analysisCard" key={story.canonical_key}>
-                <div className="kicker">{editorialTopicLabel(story) || story.website_section}</div>
+                <div className="kicker">{[story.website_section, editorialTopicLabel(story)].filter(Boolean).join(' · ')}</div>
                 <h3><Link href={`/articles/${story.slug}`}>{story.headline}</Link></h3>
                 <p>{story.teaser}</p>
                 <StoryMeta story={story}/>
@@ -62,7 +62,7 @@ export default async function Home(){
             ))}
           </div>
         </div>
-      </section>
+      </section>}
 
       <div className="aiBand">
         <div className="container"><strong>See more. Miss less. Understand what matters.</strong> Our newsroom monitors reporting across languages and sources, checks important claims, and connects new developments to the context readers need.</div>
