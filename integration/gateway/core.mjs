@@ -1,6 +1,7 @@
 // Portable Fetch API handler. No model calls, scheduler or public delivery code.
 import {ownerNewsletter,verifyHidden,verifyPublic} from './publishing.mjs';
-export const VERSION = '0.4.0';
+import {placements, premiumGenres, genres, placement, articleGenre} from './editorial.mjs';
+export const VERSION = '0.5.0';
 export const LEGACY_SCOPES = 'tga:read tga:drafts';
 export const SCOPES = LEGACY_SCOPES+' tga:hidden tga:owner-send tga:files tga:unpublish tga:purge';
 export class Failure extends Error {
@@ -26,16 +27,20 @@ export function edition(payload,standalone=false) {
     exact(a,['headline','teaser','body_markdown','sources','role','topic_label','genre','editorial_topic_label']);
     text(a.headline,240);text(a.teaser,1500);text(a.body_markdown,65000);text(a.topic_label,80);
     if (Object.hasOwn(a,'editorial_topic_label')) text(a.editorial_topic_label,80);
-    if (Object.hasOwn(a,'genre')) must(['news','analysis','feature'].includes(a.genre) && (a.role==='analysis')===(a.genre!=='news'),'article_genre');
-    must(['lead','top','analysis','also'].includes(a.role),'role');
+    const role = placement(a.role);
+    must(placements.includes(role),'role');
+    const genre = articleGenre(a);
+    must(genres.includes(genre) && (role === 'more') === premiumGenres.includes(genre),'article_genre');
     must(Array.isArray(a.sources)&&a.sources.length>=1&&a.sources.length<=12,'sources');a.sources.forEach(source);
   }
   must(standalone&&payload.articles.length===1||payload.articles[0].role==='lead'&&payload.articles.filter(a=>a.role==='lead').length===1,'lead');
-  const order={lead:0,top:1,analysis:2,also:3};
-  must(payload.articles.every((a,i)=>i===0||order[a.role]>=order[payload.articles[i-1].role]),'hierarchy');
+  const more = payload.articles.filter(a => placement(a.role) === 'more');
+  must(more.length <= 2,'more_article_limit');
+  must(new Set(more.map(articleGenre)).size === more.length,'duplicate_more_genre');
+  must(payload.articles.every((a,i)=>i===0||placements.indexOf(placement(a.role))>=placements.indexOf(placement(payload.articles[i-1].role))),'hierarchy');
   return payload;
 }
-export const CONTRACT={version:VERSION,mode:'approved_public_and_owner_only',sections:['lead','top','analysis','also'],
+export const CONTRACT={version:VERSION,mode:'approved_public_and_owner_only',sections:placements,genres,more:{genres:premiumGenres,max_articles:2,max_per_genre:1},
   website:{draft_table:'public_articles',hidden_table:'challenger_v0_articles',hidden_feed_visible:false,hidden_access:'unlisted_not_access_controlled',public_publication:true},
   depublication:{unpublish_scope:'tga:unpublish',delete_scope:'tga:purge',restore:true,delivery_history_preserved:true,fresh_run_keys_required:true},
   email:{provider:'Buttondown',archival_mode:'disabled',owner_only_sending:true,recipient:'benjaminmoscovici@gmail.com',subscriber_sending:false},
@@ -46,9 +51,10 @@ export const CONTRACT={version:VERSION,mode:'approved_public_and_owner_only',sec
 const articleSchema={type:'object',additionalProperties:false,required:['headline','teaser','body_markdown','sources','role','topic_label'],properties:{
   headline:{type:'string',maxLength:240},teaser:{type:'string',maxLength:1500},body_markdown:{type:'string',maxLength:65000},
   sources:{type:'array',minItems:1,maxItems:12,items:{type:'object',additionalProperties:false,required:['url','publisher'],properties:{url:{type:'string'},publisher:{type:'string'}}}},
-  role:{enum:['lead','top','analysis','also']},topic_label:{type:'string',maxLength:80},
-  genre:{enum:['news','analysis','feature']},editorial_topic_label:{type:'string',minLength:1,maxLength:80}}};
-const payloadSchema={type:'object',additionalProperties:false,required:['edition_date','title','window_start','window_end','articles'],properties:{edition_date:{type:'string'},title:{type:'string'},window_start:{type:'string'},window_end:{type:'string'},articles:{type:'array',minItems:1,maxItems:15,items:articleSchema}}};
+  role:{enum:placements,description:'Placement in edition order: lead, top, optional more, also.'},topic_label:{type:'string',maxLength:80},
+  genre:{enum:genres,description:'Use news for lead/top/also (default). Required for more: analysis, feature or background.'},editorial_topic_label:{type:'string',minLength:1,maxLength:80}},
+  allOf:[{if:{properties:{role:{const:'more'}}},then:{required:['genre'],properties:{genre:{enum:premiumGenres}}},else:{properties:{genre:{const:'news'}}}}]};
+const payloadSchema={type:'object',additionalProperties:false,required:['edition_date','title','window_start','window_end','articles'],properties:{edition_date:{type:'string'},title:{type:'string'},window_start:{type:'string'},window_end:{type:'string'},articles:{type:'array',minItems:1,maxItems:15,description:'Exactly one lead first. Up to two MORE articles, each a distinct premium genre, in approved order.',items:articleSchema,allOf:[{contains:{properties:{role:{const:'more'}}},minContains:0,maxContains:2},...premiumGenres.map(genre=>({contains:{required:['genre'],properties:{genre:{const:genre}}},minContains:0,maxContains:1}))]}}};
 const obj=(properties={},required=Object.keys(properties))=>({type:'object',additionalProperties:false,properties,required});
 const str={type:'string'};
 const lifecycleSchema=obj({hidden_key:str,article_slug:{type:'string',pattern:'^v0-[a-f0-9]{24}$'},draft_key:str,dry_run:{type:'boolean'},confirm_delete:{type:'boolean'},expected_revision:{type:'string',pattern:'^[a-f0-9]{64}$'}},['hidden_key']);
@@ -141,7 +147,13 @@ export function createGateway({store,providers,base,issuer=base,authorizationEnd
       return store.depublication({key,client:who.client,hash:await hash({name,payload:p}),hiddenKey,action,
         slug:p.article_slug??null,draftKey,dryRun,revision:p.expected_revision??null});
     }
-    if(name==='edition.submit'||name==='article.submit')return store.submit(key,who.client,await hash({name,payload:edition(args.payload,name==='article.submit')}),args.payload);
+    if(name==='edition.submit'||name==='article.submit'){
+      const digest=await hash({name,payload:args.payload});
+      // Replays use the original wire payload, including legacy placements.
+      const prior=await fresh(key);
+      if(prior){must(prior.client===who.client&&prior.hash===digest,'idempotency_conflict',409);return prior.receipt||unknownOutcome;}
+      return store.submit(key,who.client,digest,edition(args.payload,name==='article.submit'));
+    }
     if(name==='website.public'||name==='website.verify_public'){
       requireScope('tga:hidden');
       const enabled=await fresh('public-client:'+who.client);
@@ -164,7 +176,7 @@ export function createGateway({store,providers,base,issuer=base,authorizationEnd
         'political-analyst':['Politics & Diplomacy Analyst','cmvp4tb730xap07ad39kxoawc'],
         'security-analyst':['Security & Conflict Analyst','cmvp4t10x0xtj07adookwv14t']};
       authors.forEach((a,i)=>{must(a.article_slug===hidden.receipt.articles[i].slug,'author_article_binding');exact(a,['author_role_slug','author_role','author_agent_id','authorship_evidence','article_slug']);const r=roster[a.author_role_slug];must(r&&r[0]===a.author_role&&r[1]===a.author_agent_id,'author_identity');text(a.authorship_evidence,2000);});
-      labels.forEach(l=>{text(l,80);must(!/^(news|analysis|feature|today.s lead)$/i.test(l),'geography_label');});
+      labels.forEach(l=>{text(l,80);must(!/^(news|analysis|feature|background|today.s lead)$/i.test(l),'geography_label');});
       await verifyWebsite(hidden);
       if(args.payload.dry_run===true)return {status:'public_promotion_validated',published:false,article_count:authors.length};
       return store.publishPublic(key,who.client,await hash({hidden_key:hiddenKey,authors,labels}),hiddenKey,authors,labels);

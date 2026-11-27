@@ -46,9 +46,9 @@ test('owner email uses the lead subject, a masthead and date, and approved genre
   assert.ok(links.every(link=>attribute(link,'style')==='color:#d90000;text-decoration:underline'));
   assert.doesNotMatch(ownerNewsletter(hidden,{legacy:true}).body_html,/<img|#d90000/);
   assert.deepEqual(titles(mail.body_html,'h2'),['TOP STORIES','MORE','ALSO IMPORTANT']);
-  assert.deepEqual(titles(mail.body_html,'h3'),[mail.subject,'Analysis: Why JNIM sometimes holds back','Feature: Money that costs money','Ordinary news']);
+  assert.deepEqual(titles(mail.body_html,'h3'),payload.articles.map(a=>a.headline));
   assert.deepEqual(hidden,before);
-  assert.equal(ownerNewsletter({...hidden,payload:{...payload,articles:[payload.articles[0],{...payload.articles[2],headline:'Feature: Analysis: & More',genre:'analysis'}] },receipt:{...receipt,articles:receipt.articles.slice(0,2)}}).body_html.includes('Analysis: &amp; More'),true);
+  assert.equal(ownerNewsletter({...hidden,payload:{...payload,articles:[payload.articles[0],{...payload.articles[2],headline:'Feature: Analysis: & More',genre:'analysis'}] },receipt:{...receipt,articles:receipt.articles.slice(0,2)}}).body_html.includes('>Feature: Analysis: &amp; More</h3>'),true);
 });
 
 test('Buttondown confirms the per-draft template before sending to the fixed address only',async()=>{
@@ -116,4 +116,47 @@ test('approved editorial labels are optional and do not replace structured geogr
   assert.equal(storyLabel(labeled),label);
   assert.equal(storyLabel(legacy),'Sudan · Chad');
   assert.deepEqual({...labeled,editorial_topic_label:''},legacy);
+});
+
+const premium = genre => ({...article('A headline & its punctuation', 'more', 'Chad'), genre});
+const withMore = (...genres) => ({...payload, articles:[payload.articles[0], ...genres.map(premium), payload.articles.at(-1)]});
+const receiptFor = p => ({status:'hidden_ready',articles:p.articles.map((_,i)=>({
+  article_url:'https://www.theglobalanalyst.com/challenger/v0-'+String(i).padStart(24,'0'),
+}))});
+
+for (const genres of [[],['analysis'],['feature'],['background'],['analysis','feature'],['analysis','background'],['feature','background'],['background','feature']]) {
+  test('edition and owner email preserve approved order and genre: '+(genres.join(', ') || 'news only'),()=>{
+    const p=withMore(...genres);
+    assert.equal(edition(p),p);
+    const html=ownerNewsletter({payload:p,receipt:receiptFor(p)}).body_html;
+    assert.deepEqual(titles(html,'h2'),['TOP STORIES',...(genres.length?['MORE']:[]),'ALSO IMPORTANT']);
+    assert.deepEqual(titles(html,'h3'),p.articles.map(a=>a.headline));
+    const labels=tree(parseFragment(html)).filter(n=>n.attrs?.some(a=>a.value==='articleGenre'));
+    assert.deepEqual(labels.map(n=>n.childNodes[0].value.toLowerCase()),genres);
+  });
+}
+test('submission rejects invalid placement, genre, order, size and repeats',()=>{
+  for (const genre of ['analysis','feature','background']) assert.throws(()=>edition(withMore(genre,genre)),/duplicate_more_genre/);
+  assert.throws(()=>edition(withMore('analysis','feature','background')),/more_article_limit/);
+  for(const a of [{...premium('news')},{...premium('feature'),role:'top'},premium(undefined),premium('commentary'),{...premium('analysis'),role:'feature'}])
+    assert.throws(()=>edition({...payload,articles:[payload.articles[0],a]}));
+  assert.throws(()=>edition({...payload,articles:[payload.articles[0],payload.articles.at(-1),premium('analysis')]}),/hierarchy/);
+  assert.equal(edition({...payload,articles:[premium('background')]},true).articles[0].genre,'background');
+  assert.throws(()=>edition({...payload,articles:[premium('background')]}),/lead/);
+  assert.throws(()=>edition({...payload,articles:[payload.articles[0],payload.articles[2],premium('feature')]}),/duplicate_more_genre/);
+});
+
+test('a historical edition that predates MORE limits replays its exact receipt only',async()=>{
+  const old={...payload,articles:[...payload.articles.slice(0,3),payload.articles[1]]};
+  const previous={status:'private_draft',articles:[{role:'analysis'}]};
+  const value=new Map([
+    ['access:'+await hash('fixture-token'),{client:'fixture',scope:'tga:drafts',aud:'https://gateway/mcp'}],
+    ['client:fixture',{client_id:'fixture'}],
+    ['op:fixture:original-key',{client:'fixture',hash:await hash({name:'edition.submit',payload:old}),receipt:previous}],
+  ]);
+  const handle=createGateway({base:'https://gateway',providers:{},store:{get:async k=>({value:value.get(k)})}});
+  const call=p=>handle(new Request('https://gateway/v1/operations',{method:'POST',headers:{authorization:'Bearer fixture-token'},
+    body:JSON.stringify({operation:'edition.submit',idempotency_key:'original-key',payload:p})}));
+  assert.deepEqual(await (await call(old)).json(),previous);
+  assert.equal((await call({...old,title:'Changed'})).status,409);
 });
